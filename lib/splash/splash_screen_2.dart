@@ -5,7 +5,7 @@ import 'package:lottie/lottie.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'widgets/splash_card.dart';
 import 'package:roadis/utils/app_colors.dart';
-// import '../login/login_screen.dart';
+import 'package:roadis/routes/app_routes.dart';
 
 class SplashScreen2 extends StatelessWidget {
   const SplashScreen2({super.key});
@@ -13,7 +13,7 @@ class SplashScreen2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.whiteColor,
       body: SafeArea(
         child: Stack(
           children: [
@@ -23,7 +23,7 @@ class SplashScreen2 extends StatelessWidget {
               right: 24,
               child: TextButton(
                 onPressed: () {
-                  // Get.offAllNamed(AppRoutes.login);
+                  Get.offAllNamed(AppRoutes.login);
                 },
                 child: Text(
                   'Lewati',
@@ -57,8 +57,7 @@ class SplashScreen2 extends StatelessWidget {
                 currentIndex: 1,
                 totalPages: 2,
                 onNextPressed: () {
-                  // Tombol "Mulai" di halaman terakhir diarahkan ke home/login
-                  // Get.offAllNamed(AppRoutes.login);
+                  Get.offAllNamed(AppRoutes.login);
                 },
               ),
             ).animate().slideY(begin: 0.3, end: 0, duration: 500.ms, curve: Curves.easeOutCubic),

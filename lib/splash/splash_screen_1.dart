@@ -6,6 +6,7 @@ import 'widgets/splash_card.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:lottie/lottie.dart';
 import 'splash_screen_2.dart';
+import 'package:roadis/routes/app_routes.dart';
 
 class SplashScreen1 extends StatelessWidget {
   const SplashScreen1({super.key});
@@ -22,7 +23,7 @@ class SplashScreen1 extends StatelessWidget {
               right: 24,
               child: TextButton(
                 onPressed: () {
-                  // Get.offAllNamed(AppRoutes.login);
+                  Get.offAllNamed(AppRoutes.login);
                 },
                 child: Text(
                   'Lewati',

@@ -87,7 +87,6 @@ class SplashCard extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             
-            // Tombol Lanjut / Mulai
             SizedBox(
               width: double.infinity,
               height: 50,
