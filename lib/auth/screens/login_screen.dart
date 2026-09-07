@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:get/get.dart';
+import 'package:roadis/routes/app_routes.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -261,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      // Aksi ketika tombol "Daftar" ditekan
+                     Get.toNamed(AppRoutes.register); // Aksi ketika tombol "Daftar Sekarang" ditekan
                     },
                     child: Text(
                       'Daftar Sekarang',

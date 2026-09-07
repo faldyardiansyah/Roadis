@@ -3,6 +3,7 @@ import 'app_routes.dart';
 import '../splash/onboarding_screen.dart';
 import '../splash/splash_screen_1.dart';
 import '../auth/screens/login_screen.dart';
+import '../auth/screens/register_screen.dart';
 
 
 class AppPages {
@@ -12,6 +13,10 @@ class AppPages {
     GetPage(
       name: AppRoutes.login,
       page: () => const LoginScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.register,
+      page: () => const RegisterScreen(),
     ),
   ];
 }

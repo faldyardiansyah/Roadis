@@ -4,5 +4,5 @@ abstract class AppRoutes {
   static const login = '/login';
   // nanti nambah di sini kalau ada halaman baru
   // static const home = '/home';
-  // static const register = '/register';
+  static const register = '/register';
 }
