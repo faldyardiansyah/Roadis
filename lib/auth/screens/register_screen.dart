@@ -153,7 +153,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Daftar',
+                        'Daftar Sekarang',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -204,10 +204,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   onPressed: () {
                     // Aksi saat tombol daftar dengan Google ditekan
                   },
-                  icon: Image.asset(
-                    'assets/images/google_logo.png',
-                    width: 24,
-                    height: 24,
+                  icon: Icon(
+                    Icons.g_mobiledata,
+                    color: Colors.redAccent,
+                    size: 24,
                   ),
                   label: Text(
                     'Daftar dengan Google',
@@ -218,6 +218,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Sudah punya akun?',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () {
+                      Get.toNamed(AppRoutes.login);
+                    },
+                    child: Text(
+                      'Masuk',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

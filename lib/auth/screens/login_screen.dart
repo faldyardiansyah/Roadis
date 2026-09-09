@@ -3,6 +3,7 @@ import 'package:roadis/utils/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:roadis/routes/app_routes.dart';
+import 'package:roadis/utils/widgets/loading_overlay.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -57,25 +58,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 8),
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryColor.withOpacity(0.5),
+                  color: AppColors.primaryColor,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor,
-                        borderRadius: BorderRadius.circular(50),
-                      ),
+                    Icon(
+                      Icons.star_sharp, 
+                      size: 20,
+                      color: TextColors.whiteTextColor,  
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Roadis Developer',
                       style: GoogleFonts.plusJakartaSans(
-                        color: AppColors.primaryColor,
+                        color: TextColors.whiteTextColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -177,8 +175,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     elevation: 0,
                   ),
-                  onPressed: () {
-                    // Aksi ketika tombol "Masuk" ditekan
+                  onPressed: () async {
+                    showLoadingOverlay();
+                    await Future.delayed(const Duration(seconds: 2));
+                    Get.back();
+                    Get.offAllNamed(AppRoutes.main);
                   },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -232,10 +233,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset(
-                        'assets/images/google_logo.png',
-                        width: 20,
-                        height: 20,
+                      Icon(
+                        Icons.g_mobiledata,
+                        color: Colors.redAccent,
+                        size: 24,
                       ),
                       const SizedBox(width: 8),
                       Text(

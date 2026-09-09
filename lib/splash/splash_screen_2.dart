@@ -53,14 +53,20 @@ class SplashScreen2 extends StatelessWidget {
               alignment: Alignment.bottomCenter,
               child: SplashCard(
                 title: 'Pantau & Dukung',
-                description: 'Lihat laporan di sekitarmu, berikan dukungan, dan pantau proses perbaikan secara real-time.',
+                description:
+                    'Lihat laporan di sekitarmu, berikan dukungan, dan pantau proses perbaikan secara real-time.',
                 currentIndex: 1,
                 totalPages: 2,
                 onNextPressed: () {
                   Get.offAllNamed(AppRoutes.login);
                 },
               ),
-            ).animate().slideY(begin: 0.3, end: 0, duration: 500.ms, curve: Curves.easeOutCubic),
+            ).animate().slideY(
+              begin: 0.3,
+              end: 0,
+              duration: 500.ms,
+              curve: Curves.easeOutCubic,
+            ),
           ],
         ),
       ),

@@ -53,14 +53,23 @@ class SplashScreen1 extends StatelessWidget {
               alignment: Alignment.bottomCenter,
               child: SplashCard(
                 title: 'Foto & Laporkan Rusak',
-                description: 'Ambil foto kerusakan jalan dan biarkan kecerdasan buatan menganalisis jenis serta tingkat kerusakannya.',
+                description:
+                    'Ambil foto kerusakan jalan dan biarkan kecerdasan buatan menganalisis jenis serta tingkat kerusakannya.',
                 currentIndex: 0,
                 totalPages: 2,
                 onNextPressed: () {
-                  Get.to(() => const SplashScreen2(), transition: Transition.rightToLeft);
+                  Get.to(
+                    () => const SplashScreen2(),
+                    transition: Transition.rightToLeft,
+                  );
                 },
               ),
-            ).animate().slideY(begin: 0.3, end: 0, duration: 500.ms, curve: Curves.easeOutCubic),
+            ).animate().slideY(
+              begin: 0.3,
+              end: 0,
+              duration: 500.ms,
+              curve: Curves.easeOutCubic,
+            ),
           ],
         ),
       ),
