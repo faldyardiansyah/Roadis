@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:roadis/modules/profile/screens/profile_screen.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../home/screens/home_screen.dart';
@@ -42,15 +43,7 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
     ),
-    const Center(
-      child: Text(
-        'Profil Pengguna',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ),
+   const ProfileScreen(),
   ];
 
   @override

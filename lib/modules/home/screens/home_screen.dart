@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:roadis/utils/app_colors.dart';
-
+import 'package:roadis/modules/home/widgets/home_header.dart';
+import 'package:roadis/modules/home/widgets/recent_reports.dart';
+import 'package:roadis/modules/home/widgets/report_map.dart';
+import 'package:roadis/modules/home/widgets/report_stats.dart';
+import 'package:roadis/modules/home/widgets/service_banner.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -11,86 +13,76 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child : SingleChildScrollView(
-          padding : const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children:[
-                      Row(
-                        children: [
-                          Text(
-                            'Halo, Faldy Ardiansyah',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: TextColors.primaryTextColor,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text('👋', style: TextStyle(fontSize: 16)),
-                        ],
-                      ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 16,
-                              color: AppColors.greyColor,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Lobener, Indramayu',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.greyColor,
-                              ),
-                            ),
-                          ],
-                        )
-                    ]
+              HomeHeader()
+                  .animate()
+                  .fadeIn(duration: 600.ms)
+                  .slideY(
+                    begin: -0.15,
+                    end: 0,
+                    duration: 600.ms,
+                    curve: Curves.easeOutCubic,
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.whiteColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: IconButton(onPressed: (){}, icon: Stack(
-                      children: [
-                        const Icon(Icons.notifications_none, color: AppColors.blackColor,),
-                        Positioned(
-                          right: 2,
-                          top: 2,
-                          child : Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: AppColors.redColor,
-                              shape: BoxShape.circle,
-                            ),
-                          )
-                        )
-                      ],
-                    )),
-                  )
-                ],
-              ),
+
               const SizedBox(height: 20),
-              Container(
-                
-              )
-            ]
-          )
-        )
-      )
+
+              ServiceBanner()
+                  .animate()
+                  .fadeIn(duration: 700.ms, delay: 100.ms)
+                  .slideY(
+                    begin: 0.15,
+                    end: 0,
+                    duration: 700.ms,
+                    delay: 100.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+
+              const SizedBox(height: 8),
+
+              ReportStats()
+                  .animate()
+                  .fadeIn(duration: 600.ms, delay: 200.ms)
+                  .scale(
+                    begin: const Offset(0.95, 0.95),
+                    end: const Offset(1, 1),
+                    duration: 600.ms,
+                    delay: 200.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+
+              const SizedBox(height: 8),
+
+              ReportMap()
+                  .animate()
+                  .fadeIn(duration: 700.ms, delay: 300.ms)
+                  .scale(
+                    begin: const Offset(0.96, 0.96),
+                    end: const Offset(1, 1),
+                    duration: 700.ms,
+                    delay: 300.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+
+              const SizedBox(height: 8),
+
+              RecentReports()
+                  .animate()
+                  .fadeIn(duration: 700.ms, delay: 400.ms)
+                  .slideY(
+                    begin: 0.12,
+                    end: 0,
+                    duration: 700.ms,
+                    delay: 400.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
