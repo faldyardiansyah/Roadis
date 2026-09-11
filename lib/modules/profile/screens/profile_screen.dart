@@ -69,7 +69,7 @@ class ProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: AppColors.whiteColor,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: Colors.grey.shade200,
                   ),
@@ -99,9 +99,7 @@ class ProfileScreen extends StatelessWidget {
                         color: TextColors.primaryTextColor,
                       ),
                     ),
-
                     const SizedBox(height: 5),
-
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -205,10 +203,27 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 15),
+
             ],
           ),
         ),
       ),
     );
   }
+}
+
+Widget _buildContribusi(
+  String label,
+  Color nilaiColor,
+  int nilai,
+  bool Icon
+) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      
+    )
+  );
 }
