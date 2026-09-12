@@ -217,13 +217,47 @@ Widget _buildContribusi(
   String label,
   Color nilaiColor,
   int nilai,
-  bool Icon
+  bool Iconbool
 ) {
   return Container(
     width: double.infinity,
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      
-    )
+      color : AppColors.whiteColor,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(
+        color: Colors.grey.shade200,
+      ),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: TextColors.primaryTextColor,
+          ),
+        ),
+        Row(
+          children: [
+            Text(
+              nilai.toString(),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: TextColors.primaryTextColor,
+              ),
+            ),
+             const SizedBox(width: 5),
+            Icon(
+              Iconbool ? Icons.arrow_upward : Icons.arrow_downward,
+              color: nilaiColor,
+            ),
+          ],
+        ),
+      ],
+    ),
   );
 }
