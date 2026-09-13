@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:roadis/utils/app_colors.dart';
+import 'package:get/get.dart';
+import 'package:roadis/routes/app_routes.dart';
+import 'package:roadis/utils/widgets/loading_overlay.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -14,12 +17,14 @@ class ProfileScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 1. HEADER UTAMA
               Container(
                 width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: AppColors.whiteColor,
+                color: AppColors.whiteColor,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
                 ),
-                padding: const EdgeInsets.all(20),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -27,18 +32,19 @@ class ProfileScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'JALANKU INDRAMAYU',
+                          'ROADIS',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.greyColor,
+                            letterSpacing: 0.5,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Profil Pengguna',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 18,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: TextColors.primaryTextColor,
                           ),
@@ -46,155 +52,171 @@ class ProfileScreen extends StatelessWidget {
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
+                        color: Colors.grey.shade100,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.settings_outlined,
-                        size: 18,
-                        color: AppColors.blackColor,
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.settings_outlined,
+                          size: 20,
+                          color: AppColors.blackColor,
+                        ),
+                        onPressed: () {},
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 15),
+              const SizedBox(height: 16),
 
+              // 2. CARD PROFIL PENGGUNA
               Container(
                 width: double.infinity,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: AppColors.whiteColor,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.grey.shade200,
-                  ),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Column(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        size: 40,
-                        color: AppColors.blackColor,
+                    // Avatar Profil dengan Badge Centang
+                    Stack(
+                      children: [
+                        const CircleAvatar(
+                          radius: 42,
+                          backgroundImage: AssetImage(
+                            'assets/images/user_avatar.png',
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: 2,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check_circle_rounded,
+                              size: 22,
+                              color: Color(0xFF007BFF),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Nama Pengguna
+                    Text(
+                      'Faldy Ardiansyah',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: TextColors.primaryTextColor,
                       ),
                     ),
 
                     const SizedBox(height: 8),
 
-                    Text(
-                      'Faldy Ardiansyah',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: TextColors.primaryTextColor,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
+                    // Badge Verifikasi Warga
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                        horizontal: 12,
+                        vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.greenColor.withOpacity(0.08),
+                        color: const Color(0xFFE8F8F0),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFA3E6C5)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.check_circle,
+                            size: 14,
+                            color: Color(0xFF0E9F6E),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Warga Terverifikasi',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF0E9F6E),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Email Pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.verified,
-                            size: 12,
-                            color: AppColors.greenColor,
+                          Icon(
+                            Icons.email_outlined,
+                            size: 14,
+                            color: Colors.grey.shade600,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 8),
                           Text(
-                            'Warga Terverifikasi (KTP Indramayu)',
+                            'faldyardiansyah3@gmail.com',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.greenColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade700,
                             ),
                           ),
                         ],
                       ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    Divider(
-                      color: Colors.grey.shade200,
-                      height: 1,
                     ),
 
                     const SizedBox(height: 8),
 
+                    // Telepon Pill
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 5,
+                        horizontal: 14,
+                        vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(6),
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.email_outlined,
-                            size: 11,
-                            color: AppColors.greyColor,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'budi.santoso@example.com',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.greyColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 5),
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
+                          Icon(
                             Icons.phone_outlined,
-                            size: 11,
-                            color: AppColors.greyColor,
+                            size: 14,
+                            color: Colors.grey.shade600,
                           ),
-                          const SizedBox(width: 5),
+                          const SizedBox(width: 8),
                           Text(
                             '+62 812-3456-7890',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 8,
+                              fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: AppColors.greyColor,
+                              color: Colors.grey.shade700,
                             ),
                           ),
                         ],
@@ -203,61 +225,318 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 15),
 
+              const SizedBox(height: 16),
+
+              // 3. CARD KONTRIBUSI JALANKU
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.whiteColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    // Header Kontribusi
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'KONTRIBUSI ROADIS',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade500,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatItem(
+                            count: '24',
+                            label: 'Total Laporan',
+                            countColor: Colors.black87,
+                            bgColor: const Color(0xFFF8F9FA),
+                            borderColor: Colors.grey.shade200,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatItem(
+                            count: '18',
+                            label: 'Laporan Selesai',
+                            countColor: const Color(0xFF0E9F6E),
+                            bgColor: const Color(0xFFF3FAF7),
+                            borderColor: const Color(0xFFDEF7EC),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatItem(
+                            count: '5',
+                            label: 'Sedang Diproses',
+                            countColor: Colors.orange.shade800,
+                            bgColor: const Color(0xFFFFF8F0),
+                            borderColor: const Color(0xFFFEEBC8),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatItem(
+                            count: '1.450',
+                            label: 'Poin Warga Peduli',
+                            countColor: const Color(0xFF007BFF),
+                            bgColor: const Color(0xFFF0F6FF),
+                            borderColor: const Color(0xFFD0E1FD),
+                            hasStar: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // 4. MENU PENGATURAN & BANTUAN
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.whiteColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    _buildMenuItem(
+                      icon: Icons.person_outline_rounded,
+                      iconBgColor: const Color(0xFFEBF3FF),
+                      iconColor: const Color(0xFF007BFF),
+                      title: 'Pengaturan Akun & Keamanan',
+                      onTap: () {},
+                    ),
+                    _buildDivider(),
+                    _buildMenuItem(
+                      icon: Icons.notifications_none_rounded,
+                      iconBgColor: const Color(0xFFEEECFF),
+                      iconColor: const Color(0xFF6C5CE7),
+                      title: 'Notifikasi & Peringatan Kerusakan',
+                      onTap: () {},
+                    ),
+                    _buildDivider(),
+                    _buildMenuItem(
+                      icon: Icons.menu_book_outlined,
+                      iconBgColor: const Color(0xFFE6F7F5),
+                      iconColor: const Color(0xFF00B894),
+                      title: 'Panduan Penggunaan & FAQ',
+                      onTap: () {},
+                    ),
+                    _buildDivider(),
+                    _buildMenuItem(
+                      icon: Icons.info_outline_rounded,
+                      iconBgColor: const Color(0xFFF2F4F7),
+                      iconColor: Colors.grey.shade700,
+                      title: 'Tentang Aplikasi ROADIS',
+                      trailingWidget: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'v2.1.0',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                      onTap: () {},
+                    ),
+                    _buildDivider(),
+                    _buildMenuItem(
+                      icon: Icons.logout_rounded,
+                      iconBgColor: const Color(0xFFFFEBEE),
+                      iconColor: Colors.red,
+                      title: 'Keluar dari Akun',
+                      isDanger: true,
+                      onTap: () async {
+                        showLoadingOverlay();
+                        await Future.delayed(const Duration(seconds: 2));
+                        Get.back();
+                        Get.offAllNamed(AppRoutes.login);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 5. FOOTER
+              Center(
+                child: Text(
+                  'Roadis Developer 2026',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade400,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 30),
             ],
           ),
         ),
       ),
     );
   }
-}
 
-Widget _buildContribusi(
-  String label,
-  Color nilaiColor,
-  int nilai,
-  bool Iconbool
-) {
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color : AppColors.whiteColor,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(
-        color: Colors.grey.shade200,
+  // Helper Widget: Kotak Statistik
+  Widget _buildStatItem({
+    required String count,
+    required String label,
+    required Color countColor,
+    required Color bgColor,
+    required Color borderColor,
+    bool hasStar = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
       ),
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: TextColors.primaryTextColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                count,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: countColor,
+                ),
+              ),
+              if (hasStar) ...[
+                const SizedBox(width: 6),
+                const Icon(Icons.star_rounded, color: Colors.amber, size: 18),
+              ],
+            ],
           ),
-        ),
-        Row(
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper Widget: Item Baris Menu
+  Widget _buildMenuItem({
+    required IconData icon,
+    required Color iconBgColor,
+    required Color iconColor,
+    required String title,
+    String? subtitle,
+    Widget? trailingWidget,
+    bool isDanger = false,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
           children: [
-            Text(
-              nilai.toString(),
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: TextColors.primaryTextColor,
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isDanger
+                          ? Colors.red
+                          : TextColors.primaryTextColor,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF007BFF),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-             const SizedBox(width: 5),
-            Icon(
-              Iconbool ? Icons.arrow_upward : Icons.arrow_downward,
-              color: nilaiColor,
-            ),
+            if (trailingWidget != null)
+              trailingWidget
+            else
+              Icon(
+                Icons.chevron_right_rounded,
+                color: isDanger ? Colors.red : Colors.grey.shade400,
+                size: 20,
+              ),
           ],
         ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
+
+  // Helper Widget: Garis Pemisah Menu
+  Widget _buildDivider() {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      color: Colors.grey.shade100,
+      indent: 16,
+      endIndent: 16,
+    );
+  }
 }
