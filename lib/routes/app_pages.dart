@@ -5,6 +5,7 @@ import '../splash/onboarding_screen.dart';
 import '../splash/splash_screen_1.dart';
 import '../auth/screens/login_screen.dart';
 import '../auth/screens/register_screen.dart';
+import '../modules/maps/screens/map_screen.dart';
 
 class AppPages {
   static final pages = [
@@ -13,5 +14,6 @@ class AppPages {
     GetPage(name: AppRoutes.login, page: () => const LoginScreen()),
     GetPage(name: AppRoutes.register, page: () => const RegisterScreen()),
     GetPage(name: AppRoutes.main, page: () => const MainScreen()),
+    GetPage(name: AppRoutes.maps, page: () => const MapScreen()),
   ];
 }

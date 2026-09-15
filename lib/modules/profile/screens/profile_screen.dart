@@ -83,7 +83,6 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    // Avatar Profil dengan Badge Centang
                     Stack(
                       children: [
                         const CircleAvatar(

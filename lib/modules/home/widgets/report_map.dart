@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:roadis/routes/app_routes.dart';
 import 'package:roadis/utils/app_colors.dart';
 
 class ReportMap extends StatelessWidget {
@@ -21,109 +25,74 @@ class ReportMap extends StatelessWidget {
                 color: TextColors.primaryTextColor,
               ),
             ),
-            Text(
+           InkWell(
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            onTap: () {
+              Get.toNamed(AppRoutes.maps);
+            },
+            child: Text(
               'Lihat Semua >',
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
                 color: AppColors.primaryColor,
               ),
             ),
+           )
           ],
         ),
+
         const SizedBox(height: 10),
-        Container(
-          height: 125,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: const Color(0xffedf3f7),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.grey.shade200,
-            ),
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                left: 35,
-                top: 25,
-                child: _MapMarker(
-                  color: Colors.red,
-                  label: 'Jl. Raya Jatibarang',
+
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            height: 125,
+            width: double.infinity,
+            child: FlutterMap(
+              options: const MapOptions(
+                initialCenter: LatLng(-6.4731, 108.3039),
+                initialZoom: 14.5,
+                interactionOptions: InteractionOptions(
+                  flags: InteractiveFlag.all,
                 ),
               ),
-              Positioned(
-                right: 35,
-                bottom: 30,
-                child: _MapMarker(
-                  color: Colors.orange,
-                  label: 'Jl. Pantura',
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.roadis.app',
                 ),
-              ),
-              Positioned(
-                left: 15,
-                bottom: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '• 1.2 km dari lokasimu',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.greyColor,
+
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: const LatLng(-6.4725, 108.3035),
+                      width: 40,
+                      height: 40,
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Colors.red,
+                        size: 35,
+                      ),
                     ),
-                  ),
+
+                    Marker(
+                      point: const LatLng(-6.4695, 108.2985),
+                      width: 40,
+                      height: 40,
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Colors.orange,
+                        size: 35,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MapMarker extends StatelessWidget {
-  final Color color;
-  final String label;
-
-  const _MapMarker({
-    required this.color,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 6,
-            vertical: 3,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(5),
-          ),
-          child: Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 7,
-              fontWeight: FontWeight.bold,
+              ],
             ),
           ),
-        ),
-        Icon(
-          Icons.location_on,
-          color: color,
-          size: 25,
         ),
       ],
     );

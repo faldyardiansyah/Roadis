@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:roadis/modules/history/screens/history_screen.dart';
 import 'package:roadis/modules/profile/screens/profile_screen.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../home/screens/home_screen.dart';
+import '../../maps/screens/map_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -16,15 +18,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const Center(
-      child: Text(
-        'Maps',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ),
+    const MapScreen(),
     const Center(
       child: Text(
         'Halaman Report Kamera',
@@ -34,15 +28,7 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
     ),
-    const Center(
-      child: Text(
-        'History Laporan',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ),
+    const HistoryScreen(),
    const ProfileScreen(),
   ];
 
