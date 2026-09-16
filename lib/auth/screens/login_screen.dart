@@ -233,11 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.g_mobiledata,
-                        color: Colors.redAccent,
-                        size: 24,
-                      ),
+                      Image.asset('assets/images/google.png', width: 24, height: 24),
                       const SizedBox(width: 8),
                       Text(
                         'Masuk dengan Google',

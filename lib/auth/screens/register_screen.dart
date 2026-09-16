@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:roadis/routes/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:roadis/utils/app_colors.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import 'package:roadis/utils/widgets/loading_overlay.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -146,8 +148,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     elevation: 0,
                   ),
-                  onPressed: () {
-                    // Aksi saat tombol daftar ditekan
+                  onPressed: () async {
+                    showLoadingOverlay();
+                    await Future.delayed(const Duration(seconds: 2));
+
+                    Get.back(); // Tutup loading
+
+                    Get.rawSnackbar(
+                      snackPosition: SnackPosition.TOP,
+                      backgroundColor: Colors.transparent,
+                      margin: const EdgeInsets.only(
+                        top: 20,
+                        left: 10,
+                        right: 10,
+                      ),
+                      duration: const Duration(seconds: 2),
+                      messageText: AwesomeSnackbarContent(
+                        title: 'Success',
+                        message:
+                            'Selamat datang di Roadis, akun Anda berhasil dibuat.',
+                        contentType: ContentType.success,
+                      ),
+                    );
+
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar();
+
+                    // Beri jeda sebentar biar snackbar-nya sempet keliatan sebelum pindah
+                    await Future.delayed(const Duration(seconds: 2));
+
+                    Get.offAllNamed(AppRoutes.login);
                   },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -192,30 +222,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
               SizedBox(
                 width: double.infinity,
                 height: 50,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.grey[300]!),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: Colors.grey, width: 1),
                     ),
-                    elevation: 0,
                   ),
                   onPressed: () {
-                    // Aksi saat tombol daftar dengan Google ditekan
+                    // Aksi ketika tombol "Masuk dengan Google" ditekan
                   },
-                  icon: Icon(
-                    Icons.g_mobiledata,
-                    color: Colors.redAccent,
-                    size: 24,
-                  ),
-                  label: Text(
-                    'Daftar dengan Google',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/images/google.png',
+                        width: 24,
+                        height: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Daftar dengan Google',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
