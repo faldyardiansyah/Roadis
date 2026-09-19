@@ -42,8 +42,8 @@ class SplashScreen1 extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 180),
                 child: Lottie.asset(
                   'assets/lotties/splash1.json',
-                  width: 350,
-                  height: 350,
+                  width: 250,
+                  height: 250,
                 ),
               ).animate().fadeIn(duration: 600.ms).scale(),
             ),

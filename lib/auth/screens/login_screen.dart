@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:roadis/utils/app_colors.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:roadis/auth/controllers/auth_controller.dart';
 import 'package:roadis/routes/app_routes.dart';
-import 'package:roadis/utils/widgets/loading_overlay.dart';
+import 'package:roadis/utils/app_colors.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,6 +13,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _c = Get.find<AuthController>();
   bool _obscurePassword = true;
   bool _rememberMe = false;
 
@@ -65,9 +66,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.star_sharp, 
+                      Icons.star_sharp,
                       size: 20,
-                      color: TextColors.whiteTextColor,  
+                      color: TextColors.whiteTextColor,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -117,6 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 label: 'Email',
                 hintText: 'Masukkan email Anda',
                 prefixIcon: Icons.alternate_email_outlined,
+                controller: _c.loginEmailC,
               ),
 
               const SizedBox(height: 16),
@@ -125,6 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 label: 'Kata Sandi',
                 hintText: 'Masukkan kata sandi Anda',
                 prefixIcon: Icons.lock_outline,
+                controller: _c.loginPassC,
                 isPassword: true,
               ),
               const SizedBox(height: 16),
@@ -175,11 +178,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     elevation: 0,
                   ),
-                  onPressed: () async {
-                    showLoadingOverlay();
-                    await Future.delayed(const Duration(seconds: 2));
-                    Get.back();
-                    Get.offAllNamed(AppRoutes.main);
+                  onPressed: () {
+                    _c.login(_rememberMe);
                   },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -233,7 +233,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset('assets/images/google.png', width: 24, height: 24),
+                      Image.asset(
+                        'assets/images/google.png',
+                        width: 24,
+                        height: 24,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Masuk dengan Google',
@@ -260,7 +264,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   GestureDetector(
                     onTap: () {
-                     Get.toNamed(AppRoutes.register); // Aksi ketika tombol "Daftar Sekarang" ditekan
+                      Get.toNamed(AppRoutes.register);
                     },
                     child: Text(
                       'Daftar Sekarang',
@@ -284,6 +288,7 @@ class _LoginScreenState extends State<LoginScreen> {
     required String label,
     required String hintText,
     required IconData prefixIcon,
+    required TextEditingController controller,
     bool isPassword = false,
   }) {
     return Column(
@@ -302,6 +307,10 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 8),
 
         TextField(
+          controller: controller,
+          keyboardType: isPassword
+              ? TextInputType.text
+              : TextInputType.emailAddress,
           obscureText: isPassword ? _obscurePassword : false,
           decoration: InputDecoration(
             hintText: hintText,

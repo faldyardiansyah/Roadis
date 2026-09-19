@@ -15,8 +15,12 @@ void showAwesomeSnackbar({
     ),
     backgroundColor: Colors.transparent,
     snackPosition: SnackPosition.TOP,
-    duration: const Duration(seconds: 1),
+    duration: const Duration(seconds: 2),
     padding: EdgeInsets.zero,
-    margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
+    margin: const EdgeInsets.only(
+      top: 16,
+      left: 16,
+      right: 16,
+    ),
   );
 }

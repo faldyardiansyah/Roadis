@@ -23,7 +23,7 @@ class SplashCard extends StatelessWidget {
     return SafeArea(
       child: Container(
         width: double.infinity,
-        height: 300,
+        height: 280,
         padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
         decoration: const BoxDecoration(
           color: Colors.white,

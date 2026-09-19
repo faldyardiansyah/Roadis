@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:roadis/routes/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:roadis/utils/app_colors.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
-import 'package:roadis/utils/widgets/loading_overlay.dart';
+import 'package:roadis/auth/controllers/auth_controller.dart';
+import 'package:roadis/utils/app_colors.dart';
+import 'package:roadis/utils/widgets/show_snackbar.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -14,8 +14,9 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final _c = Get.find<AuthController>();
   bool _isPasswordVisible = false;
-  bool _rememberMe = false;
+  bool _agreeTerms = false; 
 
   @override
   Widget build(BuildContext context) {
@@ -70,29 +71,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 label: 'Nama Lengkap',
                 hintText: 'Masukkan nama lengkap Anda',
                 prefixIcon: Icons.person,
+                controller: _c.nameC,
               ),
               const SizedBox(height: 16),
               _buildInputField(
                 label: 'Email',
                 hintText: 'Masukkan email Anda',
                 prefixIcon: Icons.email,
+                controller: _c.registerEmailC,
+                keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
               _buildInputField(
                 label: 'Kata Sandi',
                 hintText: 'Masukkan kata sandi Anda',
                 prefixIcon: Icons.lock,
+                controller: _c.registerPassC,
                 isPassword: true,
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Checkbox(
-                    value: _rememberMe,
+                    value: _agreeTerms,
                     activeColor: AppColors.primaryColor,
                     onChanged: (value) {
                       setState(() {
-                        _rememberMe = value ?? false;
+                        _agreeTerms = value ?? false;
                       });
                     },
                   ),
@@ -148,37 +153,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     elevation: 0,
                   ),
-                  onPressed: () async {
-                    showLoadingOverlay();
-                    await Future.delayed(const Duration(seconds: 2));
-
-                    Get.back(); // Tutup loading
-
-                    Get.rawSnackbar(
-                      snackPosition: SnackPosition.TOP,
-                      backgroundColor: Colors.transparent,
-                      margin: const EdgeInsets.only(
-                        top: 20,
-                        left: 10,
-                        right: 10,
-                      ),
-                      duration: const Duration(seconds: 2),
-                      messageText: AwesomeSnackbarContent(
-                        title: 'Success',
-                        message:
-                            'Selamat datang di Roadis, akun Anda berhasil dibuat.',
-                        contentType: ContentType.success,
-                      ),
-                    );
-
-                    ScaffoldMessenger.of(context)
-                      ..hideCurrentSnackBar();
-
-                    // Beri jeda sebentar biar snackbar-nya sempet keliatan sebelum pindah
-                    await Future.delayed(const Duration(seconds: 2));
-
-                    Get.offAllNamed(AppRoutes.login);
-                  },
+                  onPressed: () => _c.register(_agreeTerms),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -230,7 +205,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   onPressed: () {
-                    // Aksi ketika tombol "Masuk dengan Google" ditekan
+                    // Aksi ketika tombol "Daftar dengan Google" ditekan
                   },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -267,9 +242,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(width: 4),
                   GestureDetector(
-                    onTap: () {
-                      Get.toNamed(AppRoutes.login);
-                    },
+                    onTap: () => Get.back(),
                     child: Text(
                       'Masuk',
                       style: GoogleFonts.plusJakartaSans(
@@ -292,6 +265,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required String label,
     required String hintText,
     required IconData prefixIcon,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
     bool isPassword = false,
   }) {
     return Column(
@@ -310,7 +285,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const SizedBox(height: 8),
 
         TextField(
-          obscureText: isPassword ? _isPasswordVisible : false,
+          controller: controller,
+          keyboardType: keyboardType,
+          // Password disembunyikan selama _isPasswordVisible == false
+          obscureText: isPassword ? !_isPasswordVisible : false,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -319,8 +297,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ? IconButton(
                     icon: Icon(
                       _isPasswordVisible
-                          ? Icons.visibility_off
-                          : Icons.visibility,
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                       color: Colors.grey[500],
                       size: 20,
                     ),
