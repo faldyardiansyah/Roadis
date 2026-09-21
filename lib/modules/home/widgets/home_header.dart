@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:roadis/utils/app_colors.dart';
+import 'package:roadis/routes/app_routes.dart';
+import 'package:get/get.dart';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({Key? key}) : super(key: key);
@@ -55,7 +57,9 @@ class HomeHeader extends StatelessWidget {
             border: Border.all(color: Colors.grey.shade200),
           ),
           child: IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Get.toNamed(AppRoutes.notifikasi);
+            },
             icon: Stack(
               children: [
                 const Icon(

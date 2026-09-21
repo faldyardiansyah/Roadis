@@ -77,7 +77,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               _buildInputField(
                 label: 'Email',
                 hintText: 'Masukkan email Anda',
-                prefixIcon: Icons.email,
+                prefixIcon: Icons.alternate_email_outlined,
                 controller: _c.registerEmailC,
                 keyboardType: TextInputType.emailAddress,
               ),
@@ -85,7 +85,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               _buildInputField(
                 label: 'Kata Sandi',
                 hintText: 'Masukkan kata sandi Anda',
-                prefixIcon: Icons.lock,
+                prefixIcon: Icons.lock_outline,
                 controller: _c.registerPassC,
                 isPassword: true,
               ),
