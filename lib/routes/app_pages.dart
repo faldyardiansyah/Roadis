@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:roadis/modules/camera/screens/report_camera_screen.dart';
 import 'package:roadis/modules/main/screens/main_screen.dart';
 import 'app_routes.dart';
 import '../splash/onboarding_screen.dart';
@@ -17,5 +18,6 @@ class AppPages {
     GetPage(name: AppRoutes.main, page: () => const MainScreen()),
     GetPage(name: AppRoutes.maps, page: () => const MapScreen()),
     GetPage(name: AppRoutes.notifikasi, page: () => const NotificationScreen()),
+    GetPage(name: AppRoutes.reportCamera, page: () => const ReportCameraScreen())
   ];
 }

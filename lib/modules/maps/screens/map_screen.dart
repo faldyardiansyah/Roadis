@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
@@ -35,8 +36,7 @@ class _MapScreenState extends State<MapScreen> {
               ),
               children: [
                 TileLayer(
-                  urlTemplate:
-                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.jalanku.indramayu',
                 ),
 
@@ -170,373 +170,403 @@ class _MapScreenState extends State<MapScreen> {
 
             // APP BAR SEARCH & FILTER
             Positioned(
-              top: 12,
-              left: 16,
-              right: 16,
-              child: Column(
-                children: [
-                  // Search Bar
-                  Row(
+                  top: 12,
+                  left: 16,
+                  right: 16,
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: Container(
-                          height: 48,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.06),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
+                      // Search Bar
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 48,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
                               ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.search,
-                                color: Colors.grey.shade400,
-                                size: 18,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.06),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextFormField(
-                                  decoration: InputDecoration(
-                                    border: InputBorder.none,
-                                    hintText: 'Cari lokasi...',
-                                    hintStyle: GoogleFonts.plusJakartaSans(
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.search,
+                                    color: Colors.grey.shade400,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextFormField(
+                                      decoration: InputDecoration(
+                                        border: InputBorder.none,
+                                        hintText: 'Cari lokasi...',
+                                        hintStyle: GoogleFonts.plusJakartaSans(
+                                          fontSize: 14,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    width: 1,
+                                    height: 24,
+                                    color: Colors.grey.shade300,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Batal',
+                                    style: GoogleFonts.plusJakartaSans(
                                       fontSize: 14,
                                       color: Colors.grey.shade600,
                                     ),
                                   ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 1,
-                                height: 24,
-                                color: Colors.grey.shade300,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Batal',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        height: 48,
-                        width: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.tune_rounded,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // Filter Chips Scroll Horizon
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildFilterChip(
-                          'Semua (18)',
-                          true,
-                          const Color(0xFF0284C7),
-                        ),
-                        _buildFilterChip(
-                          'Rusak Berat (7)',
-                          false,
-                          const Color(0xFFDC2626),
-                        ),
-                        _buildFilterChip(
-                          'Rusak Sedang (6)',
-                          false,
-                          const Color(0xFFD97706),
-                        ),
-                        _buildFilterChip(
-                          'Proses Perbaikan',
-                          false,
-                          const Color(0xFF10B981),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // MAP CONTROLS / TOMBOL MAP
-            Positioned(
-              right: 16,
-              top: 130,
-              child: Column(
-                children: [
-                  _buildMapButton(Icons.map_outlined, () {}),
-                  const SizedBox(height: 8),
-                  _buildMapButton(Icons.my_location, () {
-                    _mapController.move(_indramayuCenter, 15);
-                  }),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        InkWell(
-                          onTap: () => _mapController.move(
-                            _mapController.camera.center,
-                            _mapController.camera.zoom + 1,
-                          ),
-                          child: const Padding(
-                            padding: EdgeInsets.all(10),
-                            child: Icon(
-                              Icons.add,
-                              size: 20,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: Colors.grey.shade200,
-                        ),
-                        InkWell(
-                          onTap: () => _mapController.move(
-                            _mapController.camera.center,
-                            _mapController.camera.zoom - 1,
-                          ),
-                          child: const Padding(
-                            padding: EdgeInsets.all(10),
-                            child: Icon(
-                              Icons.remove,
-                              size: 20,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // bottom bawah buat detail ntar
-            if (_showDetailCard)
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 20,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Icon Peringatan Merah
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFEBEE),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.warning_amber_rounded,
-                              color: Color(0xFFDC2626),
-                              size: 28,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 3,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFEBEE),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        'RUSAK BERAT',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFFDC2626),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '12 Menit lalu',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 10,
-                                        color: Colors.grey.shade500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Lubang Jalan Dalam (±15cm)',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.location_on_outlined,
-                                      size: 12,
-                                      color: Colors.grey.shade500,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        'Jl. Raya Jatibarang (Depan SPBU)',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 11,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () {
-                              setState(() {
-                                _showDetailCard = false;
-                              });
-                            },
-                            child: Icon(
-                              Icons.close,
-                              size: 18,
-                              color: Colors.grey.shade400,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0284C7),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                              ),
-                              child: Text(
-                                'Lihat Rincian Laporan',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
+                                ],
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Expanded(
-                            flex: 1,
-                            child: OutlinedButton.icon(
-                              onPressed: () {},
-                              icon: const Icon(
-                                Icons.navigation_outlined,
-                                size: 14,
-                                color: Color(0xFF0284C7),
-                              ),
-                              label: Text(
-                                'Navigasi',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF0284C7),
+                          Container(
+                            height: 48,
+                            width: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.06),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
                                 ),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(
-                                  color: Colors.grey.shade300,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                              ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.tune_rounded,
+                              color: Colors.grey.shade700,
                             ),
                           ),
                         ],
                       ),
+
+                      const SizedBox(height: 10),
+
+                      // Filter Chips Scroll Horizon
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildFilterChip(
+                              'Semua (18)',
+                              true,
+                              const Color(0xFF0284C7),
+                            ),
+                            _buildFilterChip(
+                              'Rusak Berat (7)',
+                              false,
+                              const Color(0xFFDC2626),
+                            ),
+                            _buildFilterChip(
+                              'Rusak Sedang (6)',
+                              false,
+                              const Color(0xFFD97706),
+                            ),
+                            _buildFilterChip(
+                              'Proses Perbaikan',
+                              false,
+                              const Color(0xFF10B981),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
+                )
+                .animate()
+                .fadeIn(duration: 500.ms)
+                .slideY(
+                  begin: -0.2,
+                  end: 0,
+                  duration: 500.ms,
+                  curve: Curves.easeOutCubic,
                 ),
-              ),
+
+            // MAP CONTROLS / TOMBOL MAP
+            Positioned(
+                  right: 16,
+                  top: 130,
+                  child: Column(
+                    children: [
+                      _buildMapButton(Icons.map_outlined, () {}),
+                      const SizedBox(height: 8),
+                      _buildMapButton(Icons.my_location, () {
+                        _mapController.move(_indramayuCenter, 15);
+                      }),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            InkWell(
+                              onTap: () => _mapController.move(
+                                _mapController.camera.center,
+                                _mapController.camera.zoom + 1,
+                              ),
+                              child: const Padding(
+                                padding: EdgeInsets.all(10),
+                                child: Icon(
+                                  Icons.add,
+                                  size: 20,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                            Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: Colors.grey.shade200,
+                            ),
+                            InkWell(
+                              onTap: () => _mapController.move(
+                                _mapController.camera.center,
+                                _mapController.camera.zoom - 1,
+                              ),
+                              child: const Padding(
+                                padding: EdgeInsets.all(10),
+                                child: Icon(
+                                  Icons.remove,
+                                  size: 20,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+                .animate()
+                .fadeIn(duration: 600.ms, delay: 200.ms)
+                .slideX(
+                  begin: 0.2,
+                  end: 0,
+                  duration: 600.ms,
+                  delay: 200.ms,
+                  curve: Curves.easeOutCubic,
+                ),
+
+            // bottom bawah buat detail ntar
+            if (_showDetailCard)
+              Positioned(
+                    left: 16,
+                    right: 16,
+                    bottom: 20,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Icon Peringatan Merah
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFEBEE),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.warning_amber_rounded,
+                                  color: Color(0xFFDC2626),
+                                  size: 28,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFFEBEE),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'RUSAK BERAT',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                              color: const Color(0xFFDC2626),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '12 Menit lalu',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 10,
+                                            color: Colors.grey.shade500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Lubang Jalan Dalam (±15cm)',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.location_on_outlined,
+                                          size: 12,
+                                          color: Colors.grey.shade500,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            'Jl. Raya Jatibarang (Depan SPBU)',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 11,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _showDetailCard = false;
+                                  });
+                                },
+                                child: Icon(
+                                  Icons.close,
+                                  size: 18,
+                                  color: Colors.grey.shade400,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: ElevatedButton(
+                                  onPressed: () {},
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF0284C7),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Lihat Rincian Laporan',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                flex: 1,
+                                child: OutlinedButton.icon(
+                                  onPressed: () {},
+                                  icon: const Icon(
+                                    Icons.navigation_outlined,
+                                    size: 14,
+                                    color: Color(0xFF0284C7),
+                                  ),
+                                  label: Text(
+                                    'Navigasi',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF0284C7),
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .animate()
+                  .fadeIn(duration: 600.ms, delay: 300.ms)
+                  .slideY(
+                    begin: 0.2,
+                    end: 0,
+                    duration: 600.ms,
+                    delay: 300.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
           ],
         ),
       ),
@@ -552,15 +582,10 @@ class _MapScreenState extends State<MapScreen> {
         color: isSelected ? const Color(0xFF0284C7) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isSelected
-              ? const Color(0xFF0284C7)
-              : Colors.grey.shade200,
+          color: isSelected ? const Color(0xFF0284C7) : Colors.grey.shade200,
         ),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 6,
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
         ],
       ),
       child: Row(
@@ -596,10 +621,7 @@ class _MapScreenState extends State<MapScreen> {
         color: Colors.white,
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8),
         ],
       ),
       child: IconButton(

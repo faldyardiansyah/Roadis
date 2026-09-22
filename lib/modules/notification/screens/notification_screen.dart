@@ -9,11 +9,14 @@ class NotificationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final int currentYear = DateTime.now().year;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Column(
           children: [
+            // APP BAR
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Row(
@@ -46,7 +49,7 @@ class NotificationScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   Container(
                     padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.primaryColor,
                       shape: BoxShape.circle,
                     ),
@@ -58,12 +61,14 @@ class NotificationScreen extends StatelessWidget {
                   ),
                 ],
               ),
-            ).animate().fade(duration: 400.ms).slideY(
-                  begin: -0.2,
-                  end: 0,
-                  duration: 400.ms,
-                ),
+            )
+                .animate()
+                .fade(duration: 400.ms)
+                .slideY(begin: -0.2, end: 0, duration: 400.ms),
+
             const SizedBox(height: 20),
+
+            // HEADER NOTIFIKASI TERBARU
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -79,9 +84,7 @@ class NotificationScreen extends StatelessWidget {
                   const Spacer(),
                   TextButton.icon(
                     onPressed: () {},
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                    ),
+                    style: TextButton.styleFrom(padding: EdgeInsets.zero),
                     icon: const Icon(
                       Icons.checklist_sharp,
                       color: AppColors.primaryColor,
@@ -98,20 +101,15 @@ class NotificationScreen extends StatelessWidget {
                   ),
                 ],
               ),
-            ).animate().fade(
-                  duration: 500.ms,
-                  delay: 150.ms,
-                ),
+            ).animate().fade(duration: 500.ms, delay: 150.ms),
+
             const SizedBox(height: 8),
+
+            // FILTER BUTTONS
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildButtonFilter(
-                  Icons.all_inbox,
-                  'Semua',
-                  true,
-                  () {},
-                ),
+                _buildButtonFilter(Icons.all_inbox, 'Semua', true, () {}),
                 _buildButtonFilter(
                   Icons.calendar_month,
                   'Hari Ini',
@@ -125,22 +123,17 @@ class NotificationScreen extends StatelessWidget {
                   () {},
                 ),
               ],
-            ).animate().fade(
-                  duration: 500.ms,
-                  delay: 250.ms,
-                ).slideX(
-                  begin: 0.1,
-                  end: 0,
-                  duration: 500.ms,
-                ),
+            )
+                .animate()
+                .fade(duration: 500.ms, delay: 250.ms)
+                .slideX(begin: 0.1, end: 0, duration: 500.ms),
+
             const SizedBox(height: 12),
+
+            // LIST NOTIFIKASI
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  bottom: 20,
-                ),
+                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
                 children: [
                   _buildListNotifikasi(
                     Icons.sync_rounded,
@@ -190,12 +183,31 @@ class NotificationScreen extends StatelessWidget {
                 ],
               ),
             ),
+
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                '$currentYear Developer Roadis',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black54,
+                ),
+              )
+                  .animate()
+                  .fade(duration: 500.ms)
+                  .slideY(begin: 0.2, end: 0, duration: 500.ms),
+            ),
+
+            const SizedBox(height: 16),
           ],
         ),
       ),
     );
   }
 }
+
+// --- HELPER METHODS ---
 
 Widget _buildButtonFilter(
   IconData icon,
@@ -207,14 +219,9 @@ Widget _buildButtonFilter(
     onTap: onTap,
     borderRadius: BorderRadius.circular(20),
     child: Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isSelected
-            ? AppColors.primaryColor
-            : const Color(0xFFEFEFEF),
+        color: isSelected ? AppColors.primaryColor : const Color(0xFFEFEFEF),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -259,10 +266,7 @@ Widget _buildListNotifikasi(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFFE9EEF3),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0xFFE9EEF3), width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.03),
@@ -281,11 +285,7 @@ Widget _buildListNotifikasi(
                 color: statusColor.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: statusColor,
-                size: 22,
-              ),
+              child: Icon(icon, color: statusColor, size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -364,11 +364,5 @@ Widget _buildListNotifikasi(
         ),
       ),
     ),
-  ).animate().fade(
-        duration: 500.ms,
-      ).slideY(
-        begin: 0.15,
-        end: 0,
-        duration: 500.ms,
-      );
+  ).animate().fade(duration: 500.ms).slideY(begin: 0.15, end: 0, duration: 500.ms);
 }

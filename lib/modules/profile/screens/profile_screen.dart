@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:get/get.dart';
@@ -17,7 +18,6 @@ class ProfileScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. HEADER UTAMA
               Container(
                 width: double.infinity,
                 color: AppColors.whiteColor,
@@ -67,11 +67,10 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
+              ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.2, end: 0, duration: 500.ms, curve: Curves.easeOutCubic),
 
               const SizedBox(height: 16),
 
-              // 2. CARD PROFIL PENGGUNA
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -112,7 +111,6 @@ class ProfileScreen extends StatelessWidget {
 
                     const SizedBox(height: 12),
 
-                    // Nama Pengguna
                     Text(
                       'Faldy Ardiansyah',
                       style: GoogleFonts.plusJakartaSans(
@@ -124,7 +122,6 @@ class ProfileScreen extends StatelessWidget {
 
                     const SizedBox(height: 8),
 
-                    // Badge Verifikasi Warga
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -158,7 +155,6 @@ class ProfileScreen extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // Email Pill
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -191,7 +187,6 @@ class ProfileScreen extends StatelessWidget {
 
                     const SizedBox(height: 8),
 
-                    // Telepon Pill
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -223,11 +218,10 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
+              ).animate().fadeIn(duration: 600.ms, delay: 100.ms).scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1), duration: 600.ms, delay: 100.ms, curve: Curves.easeOutCubic),
 
               const SizedBox(height: 16),
 
-              // 3. CARD KONTRIBUSI JALANKU
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -239,7 +233,6 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    // Header Kontribusi
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -306,11 +299,10 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
+              ).animate().fadeIn(duration: 600.ms, delay: 200.ms).slideY(begin: 0.1, end: 0, duration: 600.ms, delay: 200.ms, curve: Curves.easeOutCubic),
 
               const SizedBox(height: 16),
 
-              // 4. MENU PENGATURAN & BANTUAN
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -386,11 +378,10 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
+              ).animate().fadeIn(duration: 600.ms, delay: 300.ms).slideY(begin: 0.15, end: 0, duration: 600.ms, delay: 300.ms, curve: Curves.easeOutCubic),
 
               const SizedBox(height: 24),
 
-              // 5. FOOTER
               Center(
                 child: Text(
                   'Roadis Developer 2026',
@@ -400,7 +391,7 @@ class ProfileScreen extends StatelessWidget {
                     color: Colors.grey.shade400,
                   ),
                 ),
-              ),
+              ).animate().fadeIn(duration: 600.ms, delay: 400.ms),
 
               const SizedBox(height: 30),
             ],
@@ -410,7 +401,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // Helper Widget: Kotak Statistik
   Widget _buildStatItem({
     required String count,
     required String label,
@@ -459,7 +449,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // Helper Widget: Item Baris Menu
   Widget _buildMenuItem({
     required IconData icon,
     required Color iconBgColor,
@@ -528,7 +517,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // Helper Widget: Garis Pemisah Menu
   Widget _buildDivider() {
     return Divider(
       height: 1,
