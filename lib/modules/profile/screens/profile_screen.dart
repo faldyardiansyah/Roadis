@@ -342,7 +342,9 @@ class ProfileScreen extends StatelessWidget {
                       iconBgColor: const Color(0xFFE6F7F5),
                       iconColor: const Color(0xFF00B894),
                       title: 'Panduan Penggunaan & FAQ',
-                      onTap: () {},
+                      onTap: () {
+                        Get.toNamed(AppRoutes.faq);
+                      },
                     ),
                     _buildDivider(),
                     _buildMenuItem(
