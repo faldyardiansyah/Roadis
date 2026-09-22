@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:roadis/routes/app_routes.dart';
 import 'package:roadis/utils/app_colors.dart';
 
 class ServiceBanner extends StatelessWidget {
@@ -69,7 +71,9 @@ class ServiceBanner extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Get.toNamed(AppRoutes.reportCamera);
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.whiteColor,
                   foregroundColor: AppColors.primaryColor,

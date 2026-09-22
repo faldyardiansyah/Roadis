@@ -12,13 +12,14 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              HomeHeader()
+              const HomeHeader()
                   .animate()
                   .fadeIn(duration: 600.ms)
                   .slideY(
@@ -28,9 +29,9 @@ class HomeScreen extends StatelessWidget {
                     curve: Curves.easeOutCubic,
                   ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              ServiceBanner()
+              const ServiceBanner()
                   .animate()
                   .fadeIn(duration: 700.ms, delay: 100.ms)
                   .slideY(
@@ -41,9 +42,9 @@ class HomeScreen extends StatelessWidget {
                     curve: Curves.easeOutCubic,
                   ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
 
-              ReportStats()
+              const ReportStats()
                   .animate()
                   .fadeIn(duration: 600.ms, delay: 200.ms)
                   .scale(
@@ -54,9 +55,9 @@ class HomeScreen extends StatelessWidget {
                     curve: Curves.easeOutCubic,
                   ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
 
-              ReportMap()
+              const ReportMap()
                   .animate()
                   .fadeIn(duration: 700.ms, delay: 300.ms)
                   .scale(
@@ -67,9 +68,9 @@ class HomeScreen extends StatelessWidget {
                     curve: Curves.easeOutCubic,
                   ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
 
-              RecentReports()
+              const RecentReports()
                   .animate()
                   .fadeIn(duration: 700.ms, delay: 400.ms)
                   .slideY(
@@ -79,6 +80,8 @@ class HomeScreen extends StatelessWidget {
                     delay: 400.ms,
                     curve: Curves.easeOutCubic,
                   ),
+                  
+              const SizedBox(height: 20),
             ],
           ),
         ),

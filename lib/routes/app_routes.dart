@@ -6,5 +6,7 @@ abstract class AppRoutes {
   static const main = '/main';
   static const maps = '/maps';
   static const notifikasi = '/notifikasi';
+
   static const faq = '/faq';
+  static const reportCamera = '/reportCamera';
 }

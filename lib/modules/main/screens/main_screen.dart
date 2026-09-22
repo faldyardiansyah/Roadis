@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:roadis/modules/camera/screens/report_camera_screen.dart';
 import 'package:roadis/modules/history/screens/history_screen.dart';
 import 'package:roadis/modules/profile/screens/profile_screen.dart';
 import 'package:roadis/utils/app_colors.dart';
@@ -19,17 +20,9 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const MapScreen(),
-    const Center(
-      child: Text(
-        'Halaman Report Kamera',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ),
+    const ReportCameraScreen(),
     const HistoryScreen(),
-   const ProfileScreen(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -77,8 +70,7 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
       ),
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         color: Colors.white,
         elevation: 8,
@@ -89,27 +81,11 @@ class _MainScreenState extends State<MainScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(
-                Icons.home_rounded,
-                'Home',
-                0,
-              ),
-              _buildNavItem(
-                Icons.map_outlined,
-                'Maps',
-                1,
-              ),
+              _buildNavItem(Icons.home_rounded, 'Home', 0),
+              _buildNavItem(Icons.map_outlined, 'Maps', 1),
               const SizedBox(width: 55),
-              _buildNavItem(
-                Icons.history_rounded,
-                'History',
-                3,
-              ),
-              _buildNavItem(
-                Icons.person_outline_rounded,
-                'Profil',
-                4,
-              ),
+              _buildNavItem(Icons.history_rounded, 'History', 3),
+              _buildNavItem(Icons.person_outline_rounded, 'Profil', 4),
             ],
           ),
         ),
@@ -117,11 +93,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildNavItem(
-    IconData icon,
-    String label,
-    int index,
-  ) {
+  Widget _buildNavItem(IconData icon, String label, int index) {
     final bool isSelected = _currentIndex == index;
 
     return InkWell(
@@ -137,46 +109,59 @@ class _MainScreenState extends State<MainScreen> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 62,
-            height: 65,
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.primaryColor.withOpacity(0.10)
-                  : Colors.transparent,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: 22,
-                  color: isSelected
-                      ? AppColors.primaryColor
-                      : Colors.grey.shade700,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  label,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10,
-                    fontWeight: isSelected
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                    color: isSelected
-                        ? AppColors.primaryColor
-                        : Colors.grey.shade700,
+          AnimatedScale(
+            scale: isSelected ? 1.05 : 1.0,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutBack,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 62,
+              height: 65,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primaryColor.withOpacity(0.10)
+                    : Colors.transparent,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedScale(
+                    scale: isSelected ? 1.15 : 1.0,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutBack,
+                    child: Icon(
+                      icon,
+                      size: 22,
+                      color: isSelected
+                          ? AppColors.primaryColor
+                          : Colors.grey.shade700,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 3),
+                  Text(
+                    label,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? AppColors.primaryColor
+                          : Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          if (isSelected)
-            Positioned(
-              top: -8,
-              left: 0,
-              right: 0,
+          Positioned(
+            top: -8,
+            left: 0,
+            right: 0,
+            child: AnimatedScale(
+              scale: isSelected ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutBack,
               child: Container(
                 height: 3,
                 decoration: BoxDecoration(
@@ -185,6 +170,7 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
             ),
+          ),
         ],
       ),
     );
