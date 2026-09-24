@@ -3,12 +3,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/routes/app_routes.dart';
 import 'package:get/get.dart';
+import 'package:roadis/auth/controllers/auth_controller.dart';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+     final authC = Get.find<AuthController>();
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -17,14 +19,17 @@ class HomeHeader extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(
-                  'Halo, Faldy Ardiansyah',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: TextColors.primaryTextColor,
-                  ),
-                ),
+                Obx(() {
+                  final nama = authC.user.value?.nama ?? 'Warga';
+                  return Text(
+                    'Halo, $nama',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: TextColors.primaryTextColor,
+                    ),
+                  );
+                }),
                 const SizedBox(width: 4),
                 Text('👋', style: TextStyle(fontSize: 16)),
               ],

@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:roadis/utils/app_colors.dart';
+import 'package:roadis/modules/home/controllers/home_controller.dart';
+import 'package:roadis/modules/home/models/laporan_model.dart';
 
 class RecentReports extends StatelessWidget {
   const RecentReports({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final c = Get.find<HomeController>();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -21,51 +26,77 @@ class RecentReports extends StatelessWidget {
                 color: TextColors.primaryTextColor,
               ),
             ),
-            Text(
-              'Kec. Indramayu',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 9,
-                fontWeight: FontWeight.w500,
-                color: AppColors.greyColor,
-              ),
-            ),
           ],
         ),
         const SizedBox(height: 10),
-        _ReportCard(
-          title: 'Lubang Dalam (±15cm)',
-          address: 'Jl. Jatibarang, Depan SPBU',
-          status: 'Diproses',
-          icon: Icons.warning_amber_rounded,
-          iconColor: Colors.orange,
-        ),
-        const SizedBox(height: 8),
-        _ReportCard(
-          title: 'Aspal Terkelupas',
-          address: 'Jl. Raya Indramayu',
-          status: 'Selesai',
-          icon: Icons.warning_amber_rounded,
-          iconColor: Colors.orange,
-        ),
+        Obx(() {
+          if (c.isLoadingStats.value) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          if (c.errorStats.value != null) {
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.whiteColor,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, size: 18, color: Colors.redAccent),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      c.errorStats.value!,
+                      style: GoogleFonts.plusJakartaSans(fontSize: 11, color: Colors.redAccent),
+                    ),
+                  ),
+                  TextButton(onPressed: c.fetchRiwayat, child: const Text('Coba lagi')),
+                ],
+              ),
+            );
+          }
+
+          final recent = c.recentReports;
+
+          if (recent.isEmpty) {
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.whiteColor,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Text(
+                'Belum ada laporan.',
+                style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppColors.greyColor),
+              ),
+            );
+          }
+
+          return Column(
+            children: [
+              for (int i = 0; i < recent.length; i++) ...[
+                if (i > 0) const SizedBox(height: 8),
+                _ReportCard(laporan: recent[i]),
+              ],
+            ],
+          );
+        }),
       ],
     );
   }
 }
 
 class _ReportCard extends StatelessWidget {
-  final String title;
-  final String address;
-  final String status;
-  final IconData icon;
-  final Color iconColor;
+  final LaporanModel laporan;
 
-  const _ReportCard({
-    required this.title,
-    required this.address,
-    required this.status,
-    required this.icon,
-    required this.iconColor,
-  });
+  const _ReportCard({required this.laporan});
 
   @override
   Widget build(BuildContext context) {
@@ -74,22 +105,20 @@ class _ReportCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.whiteColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: laporan.status.statusColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
-              icon,
+              Icons.warning_amber_rounded,
               size: 18,
-              color: iconColor,
+              color: laporan.status.statusColor,
             ),
           ),
           const SizedBox(width: 10),
@@ -98,7 +127,9 @@ class _ReportCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  laporan.tipeKerusakan.isNotEmpty ? laporan.tipeKerusakan : laporan.judul,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -107,7 +138,9 @@ class _ReportCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  address,
+                  laporan.wilayahNama ?? laporan.judul,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 9,
                     color: AppColors.greyColor,
@@ -117,20 +150,17 @@ class _ReportCard extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 7,
-              vertical: 4,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
+              color: laporan.status.statusColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              status,
+              laporan.status.statusLabel,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 8,
                 fontWeight: FontWeight.bold,
-                color: Colors.orange,
+                color: laporan.status.statusColor,
               ),
             ),
           ),
