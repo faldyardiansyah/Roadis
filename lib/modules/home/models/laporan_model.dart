@@ -62,7 +62,7 @@ extension LaporanStatusX on String {
     switch (toLowerCase()) {
       case 'menunggu':
         return 'Menunggu';
-      case 'diproses':
+      case 'proses':
         return 'Diproses';
       case 'selesai':
         return 'Selesai';

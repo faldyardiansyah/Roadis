@@ -7,7 +7,7 @@ import '../splash/onboarding_screen.dart';
 import '../splash/splash_screen_1.dart';
 import '../auth/screens/login_screen.dart';
 import '../auth/screens/register_screen.dart';
-import '../modules/maps/screens/map_screen.dart';
+import '../modules/maps/screens/maps_screen.dart';
 import '../modules/notification/screens/notification_screen.dart';
 import '../modules/profile/screens/bantuan_screen.dart';
 

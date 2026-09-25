@@ -5,7 +5,7 @@ import 'package:roadis/modules/profile/screens/profile_screen.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../home/screens/home_screen.dart';
-import '../../maps/screens/map_screen.dart';
+import '../../maps/screens/maps_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
