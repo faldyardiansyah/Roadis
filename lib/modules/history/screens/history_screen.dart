@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:roadis/routes/app_routes.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:roadis/core/laporan/models/laporan_model.dart';
+import '../controllers/history_controller.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -13,15 +15,7 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  // State untuk melacak filter yang aktif
-  String selectedFilter = 'Semua';
-
-  final List<Map<String, dynamic>> filters = [
-    {'label': 'Semua', 'count': 24},
-    {'label': 'Diproses', 'count': 5},
-    {'label': 'Selesai', 'count': 18},
-    {'label': 'Ditolak', 'count': 1},
-  ];
+  final _c = Get.put(HistoryController());
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +24,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header Section
+            // Header
             Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                   child: Row(
@@ -88,7 +82,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
             const SizedBox(height: 16),
 
-            // Search Bar Section
+            // Search Bar
             Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Container(
@@ -116,6 +110,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: TextField(
+                            onChanged: _c.updateSearch,
                             style: GoogleFonts.plusJakartaSans(fontSize: 13),
                             decoration: InputDecoration(
                               hintText: 'Cari nomor tiket atau lokasi...',
@@ -128,19 +123,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.tune_rounded,
-                            size: 16,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -151,107 +133,126 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
             const SizedBox(height: 16),
 
-            // Filter Chips Section
+            // Filter Chips
             SizedBox(
               height: 38,
-              child: ListView.builder(
+              child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: filters.length,
-                itemBuilder: (context, index) {
-                  final filter = filters[index];
-                  final isSelected = selectedFilter == filter['label'];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedFilter = filter['label'];
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeInOut,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFF0284C7)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected
-                                ? const Color(0xFF0284C7)
-                                : Colors.grey.shade200,
+                child: Obx(() {
+                  return Row(
+                    children: HistoryController.filterOptions.map((filter) {
+                      final isSelected = _c.selectedFilter.value == filter;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          onTap: () => _c.selectFilter(filter),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            height: 38,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFF0284C7)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isSelected
+                                    ? const Color(0xFF0284C7)
+                                    : Colors.grey.shade200,
+                              ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(
+                                          0xFF0284C7,
+                                        ).withOpacity(0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ]
+                                  : [],
+                            ),
+                            child: Text(
+                              '$filter (${_c.countFor(filter)})',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.grey.shade700,
+                              ),
+                            ),
                           ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: const Color(
-                                      0xFF0284C7,
-                                    ).withOpacity(0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ]
-                              : [],
                         ),
-                        child: Text(
-                          '${filter['label']} (${filter['count']})',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.grey.shade700,
-                          ),
-                        ),
-                      ),
-                    ),
+                      );
+                    }).toList(),
                   );
-                },
+                }),
               ),
             ).animate().fadeIn(delay: 200.ms, duration: 500.ms),
 
             const SizedBox(height: 12),
 
-            // List Laporan Section
+            // List Laporan
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                children: [
-                  _buildReportCard(
-                    nomor: '#JK-8821',
-                    waktu: '15 Menit lalu',
-                    status: 'Rusak Berat',
-                    statusColor: Colors.red,
-                    judul: 'Lubang Jalan Dalam (±15cm)',
-                    lokasi: 'Jl. Raya Jatibarang (Depan SPBU)',
-                    proses: true,
-                    index: 0,
+              child: Obx(() {
+                if (_c.isLoading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (_c.errorMessage.value != null) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _c.errorMessage.value!,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            color: Colors.redAccent,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _c.fetchRiwayat,
+                          child: const Text('Coba lagi'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final list = _c.filteredLaporan;
+
+                if (list.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'Belum ada laporan.',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: _c.fetchRiwayat,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                    itemCount: list.length,
+                    itemBuilder: (context, index) {
+                      return _buildReportCard(
+                        laporan: list[index],
+                        index: index,
+                      );
+                    },
                   ),
-                  _buildReportCard(
-                    nomor: '#JK-8754',
-                    waktu: '2 Hari lalu',
-                    status: 'Selesai Diperbaiki',
-                    statusColor: Colors.green,
-                    judul: 'Jalan Amblas & Retak Panjang',
-                    lokasi: 'Jl. Sudirman, Sindang, Indramayu',
-                    proses: false,
-                    index: 1,
-                  ),
-                  _buildReportCard(
-                    nomor: '#JK-8690',
-                    waktu: '5 Hari lalu',
-                    status: 'Dalam Antrean',
-                    statusColor: Colors.blue,
-                    judul: 'Lampu Jalan Mati & Aspal Bergelombang',
-                    lokasi: 'Jl. Pantura Kandhangaur',
-                    proses: false,
-                    index: 2,
-                  ),
-                ],
-              ),
+                );
+              }),
             ),
           ],
         ),
@@ -259,17 +260,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // Card Laporan dengan animasi Staggered
-  Widget _buildReportCard({
-    required String nomor,
-    required String waktu,
-    required String status,
-    required Color statusColor,
-    required String judul,
-    required String lokasi,
-    required bool proses,
-    required int index,
-  }) {
+  Widget _buildReportCard({required LaporanModel laporan, required int index}) {
+    final statusLower = laporan.status.toLowerCase();
+    final showQueueInfo = statusLower == 'menunggu' || statusLower == 'proses';
+
     return Container(
           margin: const EdgeInsets.only(bottom: 14),
           padding: const EdgeInsets.all(16),
@@ -288,64 +282,65 @@ class _HistoryScreenState extends State<HistoryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Nomor dan status
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.confirmation_number_outlined,
-                        size: 12,
-                        color: Colors.grey.shade400,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$nomor  •  $waktu',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade500,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.confirmation_number_outlined,
+                          size: 12,
+                          color: Colors.grey.shade400,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            '#JK-${laporan.id}  •  ${laporan.waktuLaporan}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: laporan.status.statusColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      status,
+                      laporan.status.statusLabel,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: statusColor,
+                        color: laporan.status.statusColor,
                       ),
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: 12),
-
-              // Judul
               Text(
-                judul,
+                laporan.tipeKerusakan.isNotEmpty
+                    ? laporan.tipeKerusakan
+                    : laporan.judul,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF0F172A),
                 ),
               ),
-
               const SizedBox(height: 6),
-
-              // Lokasi
               Row(
                 children: [
                   const Icon(
@@ -356,7 +351,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      lokasi,
+                      laporan.wilayahNama ?? laporan.judul,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         color: Colors.grey.shade600,
@@ -365,8 +362,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                 ],
               ),
-
-              if (proses) ...[
+              if (showQueueInfo) ...[
                 const SizedBox(height: 14),
                 Container(
                   width: double.infinity,
@@ -387,12 +383,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         color: Colors.orange,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        'Menunggu perbaikan jalan oleh dinas terkait',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.orange.shade800,
+                      Expanded(
+                        child: Text(
+                          'Menunggu perbaikan jalan oleh dinas terkait',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.orange.shade800,
+                          ),
                         ),
                       ),
                     ],
@@ -404,9 +402,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
         )
         .animate()
         .fadeIn(
-          delay: Duration(milliseconds: 300 + (index * 100)),
-          duration: 600.ms,
+          delay: Duration(milliseconds: 100 + (index * 60)),
+          duration: 500.ms,
         )
-        .slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic);
+        .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic);
   }
 }

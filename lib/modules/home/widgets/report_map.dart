@@ -3,7 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:roadis/modules/home/models/laporan_model.dart';
+import 'package:roadis/core/laporan/models/laporan_model.dart';
 import 'package:roadis/routes/app_routes.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/modules/home/controllers/home_controller.dart';

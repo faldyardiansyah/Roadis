@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:get/get.dart';
 
-import '../models/laporan_model.dart';
-import '../services/laporan_service.dart';
+import '../../../core/laporan/models/laporan_model.dart';
+import '../../../core/laporan/services/laporan_service.dart';
 
 
 class HomeController extends GetxController{
@@ -17,8 +17,8 @@ class HomeController extends GetxController{
   final petaLaporan = <LaporanModel>[].obs;
 
   int get totalLaporan => riwayat.length;
-   int get totalDiproses =>
-      riwayat.where((l) => l.status.toLowerCase() == 'diproses').length;
+  int get totalDiproses =>
+    riwayat.where((l) => l.status.toLowerCase() == 'proses').length;
   int get totalSelesai =>
       riwayat.where((l) => l.status.toLowerCase() == 'selesai').length;
   

@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 import 'package:roadis/core/laporan/models/laporan_model.dart';
 import 'package:roadis/core/laporan/services/laporan_service.dart';
 
-class MapsController extends GetxController {
+class HistoryController extends GetxController {
   final _service = LaporanService();
 
   final isLoading = true.obs;
@@ -10,14 +10,16 @@ class MapsController extends GetxController {
 
   final semuaLaporan = <LaporanModel>[].obs;
   final selectedFilter = 'Semua'.obs;
-  final selectedLaporan = Rxn<LaporanModel>();
-
-  // menyimpan teks yang diketik di kotak pencarian
   final searchQuery = ''.obs;
 
-  static const filterOptions = ['Semua', 'Menunggu', 'Diproses', 'Selesai'];
+  static const filterOptions = [
+    'Semua',
+    'Menunggu',
+    'Diproses',
+    'Selesai',
+    'Ditolak',
+  ];
 
-  // sekarang menyaring berdasarkan status DAN teks pencarian
   List<LaporanModel> get filteredLaporan {
     var result = semuaLaporan.toList();
     if (selectedFilter.value != 'Semua') {
@@ -29,12 +31,12 @@ class MapsController extends GetxController {
     final query = searchQuery.value.trim().toLowerCase();
     if (query.isNotEmpty) {
       result = result.where((e) {
-        return e.judul.toLowerCase().contains(query) ||
-            e.tipeKerusakan.toLowerCase().contains(query) ||
+        final nomorTiket = 'jk-${e.id}';
+        return nomorTiket.contains(query) ||
+            e.judul.toLowerCase().contains(query) ||
             (e.wilayahNama ?? '').toLowerCase().contains(query);
       }).toList();
     }
-
     return result;
   }
 
@@ -46,46 +48,25 @@ class MapsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchLaporan();
+    fetchRiwayat();
   }
 
-  Future<void> fetchLaporan() async {
+  Future<void> fetchRiwayat() async {
     isLoading.value = true;
     errorMessage.value = null;
     try {
-      final data = await _service.getPeta();
-      semuaLaporan.value =
-          data.where((e) => e.status.toLowerCase() != 'ditolak').toList();
-      if (semuaLaporan.isNotEmpty) {
-        selectedLaporan.value = semuaLaporan.first;
-      }
+      semuaLaporan.value = await _service.getRiwayat();
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
     }
   }
-
   void selectFilter(String filter) {
-    selectedFilter.value = filter;
-  }
+      selectedFilter.value = filter;
+    }
 
-  void selectLaporan(LaporanModel laporan) {
-    selectedLaporan.value = laporan;
-  }
-
-  void closeDetailCard() {
-    selectedLaporan.value = null;
-  }
-
-  // dipanggil setiap kali user ngetik
-  void updateSearch(String query) {
-    searchQuery.value = query;
-  }
-
-  // dipanggil dari tombol tune, reset semuanya
-  void resetFilters() {
-    searchQuery.value = '';
-    selectedFilter.value = 'Semua';
-  }
+    void updateSearch(String query) {
+      searchQuery.value = query;
+    }
 }
