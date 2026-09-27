@@ -107,65 +107,79 @@ class AuthController extends GetxController {
   }
 
   Future<void> register(bool agreeTerms) async {
-  final name = nameC.text.trim();
-  final email = registerEmailC.text.trim();
-  final password = registerPassC.text;
+    final name = nameC.text.trim();
+    final email = registerEmailC.text.trim();
+    final password = registerPassC.text;
 
-  if (name.isEmpty || email.isEmpty || password.isEmpty) {
-    _error('Gagal', 'Semua field wajib diisi.');
-    return;
-  }
-  if (!GetUtils.isEmail(email)) {
-    _error('Gagal', 'Format email tidak valid.');
-    return;
-  }
-  if (password.length < 6) {
-    _error('Gagal', 'Kata sandi minimal 6 karakter.');
-    return;
-  }
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      _error('Gagal', 'Semua field wajib diisi.');
+      return;
+    }
+    if (!GetUtils.isEmail(email)) {
+      _error('Gagal', 'Format email tidak valid.');
+      return;
+    }
+    if (password.length < 6) {
+      _error('Gagal', 'Kata sandi minimal 6 karakter.');
+      return;
+    }
 
-  if (!agreeTerms) {
-    showAwesomeSnackbar(
-      title: 'Perhatian',
-      message: 'Setujui Syarat & Ketentuan terlebih dahulu.',
-      contentType: ContentType.warning,
+    if (!agreeTerms) {
+      showAwesomeSnackbar(
+        title: 'Perhatian',
+        message: 'Setujui Syarat & Ketentuan terlebih dahulu.',
+        contentType: ContentType.warning,
+      );
+      return;
+    }
+
+    showLoadingOverlay();
+
+    final error = await _service.register(
+      name: name,
+      email: email,
+      password: password,
     );
-    return;
-  }
 
-  showLoadingOverlay();
+    if (error != null) {
+      Get.back();
+      _error('Registrasi Gagal', error);
+      return;
+    }
 
-  final error = await _service.register(
-    name: name,
-    email: email,
-    password: password,
-  );
+    await Future.delayed(const Duration(milliseconds: 1500));
 
-  if (error != null) {
+    nameC.clear();
+    registerEmailC.clear();
+    registerPassC.clear();
+
     Get.back();
-    _error('Registrasi Gagal', error);
-    return;
+    Get.offAllNamed(AppRoutes.login);
+    showAwesomeSnackbar(
+      title: 'Berhasil',
+      message: 'Akun berhasil dibuat, silakan masuk.',
+      contentType: ContentType.success,
+    );
   }
-
-  await Future.delayed(const Duration(milliseconds: 1500));
-
-  nameC.clear();
-  registerEmailC.clear();
-  registerPassC.clear();
-
-  Get.back();
-  Get.offAllNamed(AppRoutes.login);
-  showAwesomeSnackbar(
-    title: 'Berhasil',
-    message: 'Akun berhasil dibuat, silakan masuk.',
-    contentType: ContentType.success,
-  );
-}
 
   Future<void> logout() async {
     await SessionStorage.clear();
     user.value = null;
     Get.offAllNamed(AppRoutes.login);
+  }
+
+  // ini buat uopdate profil
+  Future<void> updateLocalProfilePhoto(String url) async {
+    final current = user.value;
+    if (current == null) return;
+
+    final updated = current.copyWith(profilPhoto: url);
+    user.value = updated;
+
+    final token = SessionStorage.getToken();
+    if (token != null) {
+      await SessionStorage.save(token, updated);
+    }
   }
 
   @override

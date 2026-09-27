@@ -32,4 +32,14 @@ class UserModel {
       'profil_photo': profilPhoto,
     };
   }
+
+  UserModel copyWith({String? profilPhoto}) {
+    return UserModel(
+      id: id,
+      nama: nama,
+      email: email,
+      wilayahId: wilayahId,
+      profilPhoto: profilPhoto ?? this.profilPhoto,
+    );
+  }
 }
