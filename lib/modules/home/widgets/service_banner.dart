@@ -53,7 +53,7 @@ class ServiceBanner extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Laporan Jalan Rusak di Sekitarmu',
+                'Laporkan Jalan Rusak di Sekitarmu',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 19,
                   fontWeight: FontWeight.bold,
@@ -62,7 +62,7 @@ class ServiceBanner extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Bantu wujudkan jalanan Indramayu yang aman dan mulus bersama JalanKu.',
+                'Bantu wujudkan jalanan Indramayu yang aman dan mulus bersama Roadis.',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -96,7 +96,7 @@ class ServiceBanner extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Lapor Sekarang',
+                      'Laporkan Sekarang',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
