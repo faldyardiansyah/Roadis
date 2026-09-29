@@ -9,4 +9,7 @@ abstract class AppRoutes {
 
   static const faq = '/faq';
   static const reportCamera = '/reportCamera';
+  static const pengaturanAkun = '/pengaturan-akun';
+  static const pengaturanNotifikasi = '/pengaturan-notifikasi';
+  static const tentangAplikasi = '/tentang-aplikasi';
 }
