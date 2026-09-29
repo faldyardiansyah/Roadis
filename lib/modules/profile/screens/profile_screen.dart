@@ -70,7 +70,9 @@ class ProfileScreen extends StatelessWidget {
                                 size: 20,
                                 color: AppColors.blackColor,
                               ),
-                              onPressed: () {},
+                              onPressed: () {
+                                Get.toNamed(AppRoutes.pengaturanAkun);
+                              },
                             ),
                           ),
                         ],

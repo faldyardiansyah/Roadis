@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:roadis/auth/controllers/auth_controller.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/utils/widgets/show_snackbar.dart';
@@ -16,7 +17,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _c = Get.find<AuthController>();
   bool _isPasswordVisible = false;
-  bool _agreeTerms = false; 
+  bool _agreeTerms = false;
 
   @override
   Widget build(BuildContext context) {
@@ -43,11 +44,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24.0,
+            vertical: 16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
+
               Text(
                 'Buat Akun Roadis',
                 style: GoogleFonts.plusJakartaSans(
@@ -55,8 +60,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   fontWeight: FontWeight.w700,
                   color: TextColors.primaryTextColor,
                 ),
-              ),
+              )
+                  .animate()
+                  .fadeIn(
+                    duration: 600.ms,
+                    curve: Curves.easeOut,
+                  )
+                  .slideX(
+                    begin: -0.08,
+                    end: 0,
+                    duration: 600.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+
               const SizedBox(height: 8),
+
               Text(
                 'Bergabung bersama ribuan warga Indramayu untuk infrastruktur yang lebih baik.',
                 textAlign: TextAlign.left,
@@ -65,31 +83,87 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   fontWeight: FontWeight.w400,
                   color: TextColors.secondaryTextColor,
                 ),
-              ),
+              )
+                  .animate()
+                  .fadeIn(
+                    delay: 100.ms,
+                    duration: 600.ms,
+                  )
+                  .slideX(
+                    begin: -0.08,
+                    end: 0,
+                    delay: 100.ms,
+                    duration: 600.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+
               const SizedBox(height: 24),
+
               _buildInputField(
                 label: 'Nama Lengkap',
                 hintText: 'Masukkan nama lengkap Anda',
                 prefixIcon: Icons.person,
                 controller: _c.nameC,
-              ),
+              )
+                  .animate()
+                  .fadeIn(
+                    delay: 150.ms,
+                    duration: 500.ms,
+                  )
+                  .slideY(
+                    begin: 0.15,
+                    end: 0,
+                    delay: 150.ms,
+                    duration: 500.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+
               const SizedBox(height: 16),
+
               _buildInputField(
                 label: 'Email',
                 hintText: 'Masukkan email Anda',
                 prefixIcon: Icons.alternate_email_outlined,
                 controller: _c.registerEmailC,
                 keyboardType: TextInputType.emailAddress,
-              ),
+              )
+                  .animate()
+                  .fadeIn(
+                    delay: 250.ms,
+                    duration: 500.ms,
+                  )
+                  .slideY(
+                    begin: 0.15,
+                    end: 0,
+                    delay: 250.ms,
+                    duration: 500.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+
               const SizedBox(height: 16),
+
               _buildInputField(
                 label: 'Kata Sandi',
                 hintText: 'Masukkan kata sandi Anda',
                 prefixIcon: Icons.lock_outline,
                 controller: _c.registerPassC,
                 isPassword: true,
-              ),
+              )
+                  .animate()
+                  .fadeIn(
+                    delay: 350.ms,
+                    duration: 500.ms,
+                  )
+                  .slideY(
+                    begin: 0.15,
+                    end: 0,
+                    delay: 350.ms,
+                    duration: 500.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+
               const SizedBox(height: 16),
+
               Row(
                 children: [
                   Checkbox(
@@ -140,8 +214,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ],
-              ),
+              )
+                  .animate()
+                  .fadeIn(
+                    delay: 450.ms,
+                    duration: 500.ms,
+                  )
+                  .slideY(
+                    begin: 0.1,
+                    end: 0,
+                    delay: 450.ms,
+                    duration: 500.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+
               const SizedBox(height: 24),
+
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -174,8 +262,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ],
                   ),
                 ),
-              ),
+              )
+                  .animate()
+                  .fadeIn(
+                    delay: 550.ms,
+                    duration: 500.ms,
+                  )
+                  .slideY(
+                    begin: 0.15,
+                    end: 0,
+                    delay: 550.ms,
+                    duration: 500.ms,
+                    curve: Curves.easeOutCubic,
+                  )
+                  .shimmer(
+                    delay: 1100.ms,
+                    duration: 1200.ms,
+                  ),
+
               const SizedBox(height: 24),
+
               Row(
                 children: [
                   Expanded(child: Divider(color: Colors.grey[300])),
@@ -192,8 +298,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   Expanded(child: Divider(color: Colors.grey[300])),
                 ],
-              ),
+              )
+                  .animate()
+                  .fadeIn(
+                    delay: 650.ms,
+                    duration: 500.ms,
+                  ),
+
               const SizedBox(height: 24),
+
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -204,9 +317,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: () {
-                    // Aksi ketika tombol "Daftar dengan Google" ditekan
-                  },
+                  onPressed: () {},
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -227,8 +338,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ],
                   ),
                 ),
-              ),
+              )
+                  .animate()
+                  .fadeIn(
+                    delay: 700.ms,
+                    duration: 500.ms,
+                  )
+                  .slideY(
+                    begin: 0.1,
+                    end: 0,
+                    delay: 700.ms,
+                    duration: 500.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+
               const SizedBox(height: 24),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -253,7 +378,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ],
-              ),
+              )
+                  .animate()
+                  .fadeIn(
+                    delay: 800.ms,
+                    duration: 500.ms,
+                  )
+                  .slideY(
+                    begin: 0.1,
+                    end: 0,
+                    delay: 800.ms,
+                    duration: 500.ms,
+                    curve: Curves.easeOutCubic,
+                  ),
+
+              const SizedBox(height: 10),
             ],
           ),
         ),
@@ -281,18 +420,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
             letterSpacing: 0.5,
           ),
         ),
-
         const SizedBox(height: 8),
-
         TextField(
           controller: controller,
           keyboardType: keyboardType,
-          // Password disembunyikan selama _isPasswordVisible == false
           obscureText: isPassword ? !_isPasswordVisible : false,
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-            prefixIcon: Icon(prefixIcon, color: Colors.grey[500], size: 20),
+            hintStyle: TextStyle(
+              color: Colors.grey[400],
+              fontSize: 14,
+            ),
+            prefixIcon: Icon(
+              prefixIcon,
+              color: Colors.grey[500],
+              size: 20,
+            ),
             suffixIcon: isPassword
                 ? IconButton(
                     icon: Icon(
@@ -317,15 +460,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: BorderSide(
+                color: Colors.grey.shade200,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: BorderSide(
+                color: Colors.grey.shade200,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primaryColor, width: 1.5),
+              borderSide: BorderSide(
+                color: AppColors.primaryColor,
+                width: 1.5,
+              ),
             ),
           ),
         ),

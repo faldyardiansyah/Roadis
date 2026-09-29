@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:roadis/modules/camera/screens/report_camera_screen.dart';
 import 'package:roadis/modules/main/screens/main_screen.dart';
-import 'package:roadis/modules/maps/screens/laporan_detail_screen.dart';
+import 'package:roadis/modules/maps/screens/map_laporan_detail_screen.dart';
 
 import 'app_routes.dart';
 import '../splash/onboarding_screen.dart';
@@ -54,7 +54,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.detailMaps,
-      page: () => LaporanDetailScreen(
+      page: () => MapLaporanDetailScreen(
         laporan: Get.arguments,
       ),
     ),

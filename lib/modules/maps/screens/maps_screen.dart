@@ -7,7 +7,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:roadis/core/laporan/models/laporan_model.dart';
 import 'package:roadis/routes/app_routes.dart';
 import '../controllers/maps_controller.dart';
-import '../screens/laporan_detail_screen.dart';
+import 'map_laporan_detail_screen.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
