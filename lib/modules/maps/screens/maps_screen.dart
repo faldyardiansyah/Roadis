@@ -5,7 +5,9 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:roadis/core/laporan/models/laporan_model.dart';
+import 'package:roadis/routes/app_routes.dart';
 import '../controllers/maps_controller.dart';
+import '../screens/laporan_detail_screen.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
@@ -20,7 +22,7 @@ class _MapScreenState extends State<MapScreen> {
 
   final LatLng _indramayuCenter = const LatLng(-6.4731, 108.3039);
 
-    @override
+  @override
   void initState() {
     super.initState();
     // Setiap kali searchQuery berubah, cek hasil filter dan geser peta
@@ -42,6 +44,7 @@ class _MapScreenState extends State<MapScreen> {
   void dispose() {
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,10 +63,16 @@ class _MapScreenState extends State<MapScreen> {
                     children: [
                       Text(
                         _c.errorMessage.value!,
-                        style: GoogleFonts.plusJakartaSans(fontSize: 13, color: Colors.redAccent),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: Colors.redAccent,
+                        ),
                       ),
                       const SizedBox(height: 8),
-                      TextButton(onPressed: _c.fetchLaporan, child: const Text('Coba lagi')),
+                      TextButton(
+                        onPressed: _c.fetchLaporan,
+                        child: const Text('Coba lagi'),
+                      ),
                     ],
                   ),
                 );
@@ -79,7 +88,8 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.jalanku.indramayu',
                   ),
                   MarkerLayer(
@@ -95,7 +105,10 @@ class _MapScreenState extends State<MapScreen> {
                               decoration: BoxDecoration(
                                 color: lap.status.statusColor,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                               ),
                               child: const Icon(
                                 Icons.warning_amber_rounded,
@@ -123,7 +136,9 @@ class _MapScreenState extends State<MapScreen> {
                           Expanded(
                             child: Container(
                               height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(24),
@@ -137,7 +152,11 @@ class _MapScreenState extends State<MapScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.search, color: Colors.grey.shade400, size: 18),
+                                  Icon(
+                                    Icons.search,
+                                    color: Colors.grey.shade400,
+                                    size: 18,
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: TextFormField(
@@ -172,7 +191,10 @@ class _MapScreenState extends State<MapScreen> {
                                 ),
                               ],
                             ),
-                            child: Icon(Icons.tune_rounded, color: Colors.grey.shade700),
+                            child: Icon(
+                              Icons.tune_rounded,
+                              color: Colors.grey.shade700,
+                            ),
                           ),
                         ],
                       ),
@@ -197,7 +219,12 @@ class _MapScreenState extends State<MapScreen> {
                 )
                 .animate()
                 .fadeIn(duration: 500.ms)
-                .slideY(begin: -0.2, end: 0, duration: 500.ms, curve: Curves.easeOutCubic),
+                .slideY(
+                  begin: -0.2,
+                  end: 0,
+                  duration: 500.ms,
+                  curve: Curves.easeOutCubic,
+                ),
 
             // MAP CONTROLS
             Positioned(
@@ -214,7 +241,10 @@ class _MapScreenState extends State<MapScreen> {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8),
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 8,
+                            ),
                           ],
                         ),
                         child: Column(
@@ -226,10 +256,18 @@ class _MapScreenState extends State<MapScreen> {
                               ),
                               child: const Padding(
                                 padding: EdgeInsets.all(10),
-                                child: Icon(Icons.add, size: 20, color: Colors.black87),
+                                child: Icon(
+                                  Icons.add,
+                                  size: 20,
+                                  color: Colors.black87,
+                                ),
                               ),
                             ),
-                            Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+                            Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: Colors.grey.shade200,
+                            ),
                             InkWell(
                               onTap: () => _mapController.move(
                                 _mapController.camera.center,
@@ -237,7 +275,11 @@ class _MapScreenState extends State<MapScreen> {
                               ),
                               child: const Padding(
                                 padding: EdgeInsets.all(10),
-                                child: Icon(Icons.remove, size: 20, color: Colors.black87),
+                                child: Icon(
+                                  Icons.remove,
+                                  size: 20,
+                                  color: Colors.black87,
+                                ),
                               ),
                             ),
                           ],
@@ -248,7 +290,13 @@ class _MapScreenState extends State<MapScreen> {
                 )
                 .animate()
                 .fadeIn(duration: 600.ms, delay: 200.ms)
-                .slideX(begin: 0.2, end: 0, duration: 600.ms, delay: 200.ms, curve: Curves.easeOutCubic),
+                .slideX(
+                  begin: 0.2,
+                  end: 0,
+                  duration: 600.ms,
+                  delay: 200.ms,
+                  curve: Curves.easeOutCubic,
+                ),
 
             // DETAIL CARD
             Obx(() {
@@ -259,11 +307,19 @@ class _MapScreenState extends State<MapScreen> {
                     left: 16,
                     right: 16,
                     bottom: 20,
-                    child: _DetailCard(laporan: lap, onClose: _c.closeDetailCard),
+                    child: _DetailCard(
+                      laporan: lap,
+                      onClose: _c.closeDetailCard,
+                    ),
                   )
                   .animate()
                   .fadeIn(duration: 400.ms)
-                  .slideY(begin: 0.2, end: 0, duration: 400.ms, curve: Curves.easeOutCubic);
+                  .slideY(
+                    begin: 0.2,
+                    end: 0,
+                    duration: 400.ms,
+                    curve: Curves.easeOutCubic,
+                  );
             }),
           ],
         ),
@@ -332,7 +388,11 @@ class _DetailCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 16, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -347,7 +407,11 @@ class _DetailCard extends StatelessWidget {
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.warning_amber_rounded, color: color, size: 28),
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  color: color,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -357,7 +421,10 @@ class _DetailCard extends StatelessWidget {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: color.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
@@ -375,7 +442,10 @@ class _DetailCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             laporan.waktuLaporan,
-                            style: GoogleFonts.plusJakartaSans(fontSize: 10, color: Colors.grey.shade500),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              color: Colors.grey.shade500,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -383,7 +453,9 @@ class _DetailCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      laporan.tipeKerusakan.isNotEmpty ? laporan.tipeKerusakan : laporan.judul,
+                      laporan.tipeKerusakan.isNotEmpty
+                          ? laporan.tipeKerusakan
+                          : laporan.judul,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
@@ -395,12 +467,19 @@ class _DetailCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        Icon(Icons.location_on_outlined, size: 12, color: Colors.grey.shade500),
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 12,
+                          color: Colors.grey.shade500,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             laporan.wilayahNama ?? laporan.judul,
-                            style: GoogleFonts.plusJakartaSans(fontSize: 11, color: Colors.grey.shade600),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -422,17 +501,23 @@ class _DetailCard extends StatelessWidget {
                 flex: 2,
                 child: ElevatedButton(
                   onPressed: () {
-                    // TODO: arahkan ke halaman detail laporan kalau sudah ada
+                    Get.toNamed(AppRoutes.detailMaps, arguments: laporan);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0284C7),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   child: Text(
                     'Lihat Rincian Laporan',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -443,14 +528,24 @@ class _DetailCard extends StatelessWidget {
                   onPressed: () {
                     // TODO: buka aplikasi navigasi (misal geo: URI atau Google Maps)
                   },
-                  icon: const Icon(Icons.navigation_outlined, size: 14, color: Color(0xFF0284C7)),
+                  icon: const Icon(
+                    Icons.navigation_outlined,
+                    size: 14,
+                    color: Color(0xFF0284C7),
+                  ),
                   label: Text(
                     'Navigasi',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF0284C7)),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF0284C7),
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.grey.shade300),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),

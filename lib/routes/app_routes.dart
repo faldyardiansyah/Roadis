@@ -5,6 +5,7 @@ abstract class AppRoutes {
   static const register = '/register';
   static const main = '/main';
   static const maps = '/maps';
+  static const detailMaps = '/detailMaps';
   static const notifikasi = '/notifikasi';
 
   static const faq = '/faq';

@@ -13,6 +13,7 @@ class LaporanModel {
   final String status;
   final String waktuLaporan;
   final String? wilayahNama;
+  final String? namaPelapor;   
 
   LaporanModel({
     required this.id,
@@ -26,19 +27,23 @@ class LaporanModel {
     required this.status,
     required this.waktuLaporan,
     this.wilayahNama,
+    this.namaPelapor,       
   });
 
   factory LaporanModel.fromJson(Map<String, dynamic> json) {
     String? wilayahNama;
-
     final wilayah = json['wilayah'];
-
     if (wilayah is Map<String, dynamic>) {
       final nama = wilayah['nama'] ?? wilayah['name'];
+      if (nama != null) wilayahNama = nama.toString();
+    }
 
-      if (nama != null) {
-        wilayahNama = nama.toString();
-      }
+    // buat ambil nama pelapor
+    String? namaPelapor;
+    final user = json['user'];
+    if (user is Map<String, dynamic>) {
+      final nama = user['name'] ?? user['nama'];
+      if (nama != null) namaPelapor = nama.toString();
     }
 
     return LaporanModel(
@@ -53,6 +58,7 @@ class LaporanModel {
       status: json['status']?.toString() ?? '',
       waktuLaporan: json['waktu_laporan']?.toString() ?? '',
       wilayahNama: wilayahNama,
+      namaPelapor: namaPelapor,  
     );
   }
 }
