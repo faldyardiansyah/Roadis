@@ -4,6 +4,7 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:roadis/routes/app_routes.dart';
 import 'package:roadis/utils/widgets/loading_overlay.dart';
 import 'package:roadis/utils/widgets/show_snackbar.dart';
+
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/session_storage.dart';
@@ -179,6 +180,57 @@ class AuthController extends GetxController {
     final token = SessionStorage.getToken();
     if (token != null) {
       await SessionStorage.save(token, updated);
+    }
+  }
+
+  // Update nama di data lokal
+  Future<void> updateLocalName(String newName) async {
+    final current = user.value;
+    if (current == null) return;
+
+    final updated = current.copyWith(nama: newName);
+    user.value = updated;
+
+    final token = SessionStorage.getToken();
+    if (token != null) {
+      await SessionStorage.save(token, updated);
+    }
+  }
+
+  Future<String?> updateName(String newName) async {
+    final name = newName.trim();
+
+    if (name.isEmpty) {
+      return 'Nama lengkap wajib diisi.';
+    }
+
+    try {
+      await _service.updateProfileName(name: name);
+      await updateLocalName(name);
+
+      return null;
+    } on AuthException catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'Terjadi kesalahan saat memperbarui nama.';
+    }
+  }
+
+  Future<String?> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _service.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+
+      return null;
+    } on AuthException catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'Terjadi kesalahan saat memperbarui kata sandi.';
     }
   }
 

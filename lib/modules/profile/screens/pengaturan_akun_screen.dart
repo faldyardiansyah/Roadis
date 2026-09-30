@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:get/get.dart';
+import 'package:roadis/auth/controllers/auth_controller.dart';
 
 class PengaturanAkunScreen extends StatefulWidget {
   const PengaturanAkunScreen({super.key});
@@ -110,7 +112,7 @@ class _PengaturanAkunScreenState extends State<PengaturanAkunScreen> {
   void _showEditDialog({
     required String title,
     required String value,
-    required Function(String) onSave,
+    required Future<void> Function(String) onSave,
     TextInputType keyboardType = TextInputType.text,
   }) {
     final controller = TextEditingController(text: value);
@@ -161,7 +163,7 @@ class _PengaturanAkunScreenState extends State<PengaturanAkunScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              onPressed: () {
+              onPressed: () async {
                 final newValue = controller.text.trim();
 
                 if (newValue.isEmpty) {
@@ -176,11 +178,7 @@ class _PengaturanAkunScreenState extends State<PengaturanAkunScreen> {
                   return;
                 }
 
-                onSave(newValue);
-
-                Navigator.pop(dialogContext);
-
-                _showSuccessMessage('$title berhasil diperbarui');
+                await onSave(newValue);
               },
               child: const Text('Simpan'),
             ),
@@ -382,7 +380,7 @@ class _PengaturanAkunScreenState extends State<PengaturanAkunScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              onPressed: () {
+              onPressed: () async {
                 final passwordLama = passwordLamaController.text.trim();
                 final passwordBaru = passwordBaruController.text.trim();
                 final konfirmasi = konfirmasiController.text.trim();
@@ -404,11 +402,23 @@ class _PengaturanAkunScreenState extends State<PengaturanAkunScreen> {
                   return;
                 }
 
+                final authController = Get.find<AuthController>();
+
+                final error = await authController.changePassword(
+                  currentPassword: passwordLama,
+                  newPassword: passwordBaru,
+                );
+
+                if (error != null) {
+                  _showErrorMessage(error);
+                  return;
+                }
+
+                if (!mounted) return;
+
                 Navigator.pop(dialogContext);
 
-                // BELUM DISIMPAN LOKAL.
-                // Password harus diubah melalui backend.
-                _showSuccessMessage('Format kata sandi baru sudah valid');
+                _showSuccessMessage('Kata sandi berhasil diperbarui');
               },
               child: const Text('Simpan'),
             ),
@@ -533,13 +543,30 @@ class _PengaturanAkunScreenState extends State<PengaturanAkunScreen> {
                     _showEditDialog(
                       title: 'Nama Lengkap',
                       value: nama,
-                      onSave: (value) {
+                      onSave: (value) async {
+                        final authController = Get.find<AuthController>();
+
+                        final error = await authController.updateName(value);
+
+                        if (error != null) {
+                          _showErrorMessage(error);
+                          return;
+                        }
+
+                        if (!mounted) return;
+
                         setState(() {
                           nama = value;
                         });
 
-                        // SIMPAN
+                        // Tetap simpan lokal seperti sebelumnya
                         box.write('profile_nama', value);
+
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        }
+
+                        _showSuccessMessage('Nama Lengkap berhasil diperbarui');
                       },
                     );
                   },
@@ -557,13 +584,17 @@ class _PengaturanAkunScreenState extends State<PengaturanAkunScreen> {
                       title: 'Email',
                       value: email,
                       keyboardType: TextInputType.emailAddress,
-                      onSave: (value) {
+                      onSave: (value) async {
                         setState(() {
                           email = value;
                         });
 
                         // SIMPAN
                         box.write('profile_email', value);
+
+                        Navigator.pop(context);
+
+                        _showSuccessMessage('Email berhasil diperbarui');
                       },
                     );
                   },

@@ -33,10 +33,10 @@ class UserModel {
     };
   }
 
-  UserModel copyWith({String? profilPhoto}) {
+  UserModel copyWith({String? nama, String? profilPhoto}) {
     return UserModel(
       id: id,
-      nama: nama,
+      nama: nama ?? this.nama,
       email: email,
       wilayahId: wilayahId,
       profilPhoto: profilPhoto ?? this.profilPhoto,
