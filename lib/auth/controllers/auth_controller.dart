@@ -169,7 +169,7 @@ class AuthController extends GetxController {
     Get.offAllNamed(AppRoutes.login);
   }
 
-  // ini buat uopdate profil
+  // ini buat update profil
   Future<void> updateLocalProfilePhoto(String url) async {
     final current = user.value;
     if (current == null) return;
