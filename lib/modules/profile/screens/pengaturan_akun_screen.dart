@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:get/get.dart';
 import 'package:roadis/auth/controllers/auth_controller.dart';
+import 'package:roadis/modules/profile/screens/keamanan_akun_screen.dart';
 
 class PengaturanAkunScreen extends StatefulWidget {
   const PengaturanAkunScreen({super.key});
@@ -22,11 +23,28 @@ class _PengaturanAkunScreenState extends State<PengaturanAkunScreen> {
     super.initState();
 
     // Ambil data yang sebelumnya sudah disimpan
-    nama = box.read('profile_nama') ?? 'Mutiara';
-    email = box.read('profile_email') ?? 'mutiara@gmail.com';
+    final authController = Get.find<AuthController>();
+    final currentUser = authController.user.value;
+
+    nama = currentUser?.nama ?? '';
+    email = currentUser?.email ?? '';
     wilayah = box.read('profile_wilayah') ?? 'Indramayu';
+
+    _loadWilayah();
   }
 
+  Future<void> _loadWilayah() async {
+    final authController = Get.find<AuthController>();
+    final namaWilayah = await authController.getProfileWilayah();
+
+    if (!mounted) return;
+
+    if (namaWilayah != null && namaWilayah.isNotEmpty) {
+      setState(() {
+        wilayah = namaWilayah;
+      });
+    }
+  }
   // =========================================================
   // PESAN BERHASIL
   // =========================================================
@@ -579,35 +597,17 @@ class _PengaturanAkunScreenState extends State<PengaturanAkunScreen> {
                   icon: Icons.email_outlined,
                   title: 'Email',
                   subtitle: email,
-                  onTap: () {
-                    _showEditDialog(
-                      title: 'Email',
-                      value: email,
-                      keyboardType: TextInputType.emailAddress,
-                      onSave: (value) async {
-                        setState(() {
-                          email = value;
-                        });
-
-                        // SIMPAN
-                        box.write('profile_email', value);
-
-                        Navigator.pop(context);
-
-                        _showSuccessMessage('Email berhasil diperbarui');
-                      },
-                    );
-                  },
+                  onTap: () {},
+                  showArrow: false,
                 ),
-
-                _divider(),
 
                 // WILAYAH
                 _buildMenu(
                   icon: Icons.location_on_outlined,
                   title: 'Wilayah',
                   subtitle: wilayah,
-                  onTap: _showWilayahDialog,
+                  onTap: () {},
+                  showArrow: false,
                 ),
               ],
             ),
@@ -643,7 +643,14 @@ class _PengaturanAkunScreenState extends State<PengaturanAkunScreen> {
                   icon: Icons.security_outlined,
                   title: 'Keamanan Akun',
                   subtitle: 'Kelola keamanan akun ROADIS',
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const KeamananAkunScreen(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -689,6 +696,7 @@ class _PengaturanAkunScreenState extends State<PengaturanAkunScreen> {
     required String subtitle,
     required VoidCallback onTap,
     bool isDanger = false,
+    bool showArrow = true,
   }) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
@@ -716,10 +724,12 @@ class _PengaturanAkunScreenState extends State<PengaturanAkunScreen> {
         subtitle,
         style: const TextStyle(fontSize: 12, color: Colors.grey),
       ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: isDanger ? Colors.red : Colors.grey,
-      ),
+      trailing: showArrow
+          ? Icon(
+              Icons.chevron_right,
+              color: isDanger ? Colors.red : Colors.grey,
+            )
+          : null,
       onTap: onTap,
     );
   }

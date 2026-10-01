@@ -234,6 +234,39 @@ class AuthController extends GetxController {
     }
   }
 
+  Future<String?> getProfileWilayah() async {
+    try {
+      final profile = await _service.getProfile();
+
+      final wilayahData = profile['wilayah'];
+
+      if (wilayahData == null) {
+        return null;
+      }
+
+      return wilayahData['nama']?.toString();
+    } on AuthException {
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getSecurityInfo() async {
+    try {
+      final profile = await _service.getProfile();
+
+      return {
+        'last_login_at': profile['last_login_at'],
+        'password_changed_at': profile['password_changed_at'],
+      };
+    } on AuthException {
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   void onClose() {
     loginEmailC.dispose();

@@ -55,6 +55,46 @@ class AuthService {
     return LoginResult(body['token'], UserModel.fromJson(body['user']));
   }
 
+  Future<Map<String, dynamic>> getProfile() async {
+    final token = SessionStorage.getToken();
+
+    if (token == null) {
+      throw AuthException('Sesi login tidak ditemukan');
+    }
+
+    try {
+      final res = await http
+          .get(
+            Uri.parse('${ApiConfig.baseUrl}/profile'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
+
+      final body = jsonDecode(res.body) as Map<String, dynamic>;
+
+      if (res.statusCode == 200) {
+        return body['data'] as Map<String, dynamic>;
+      }
+
+      throw AuthException(
+        body['message']?.toString() ??
+            body['error']?.toString() ??
+            'Gagal mengambil profil',
+      );
+    } on SocketException {
+      throw AuthException('Tidak bisa terhubung ke server');
+    } on http.ClientException {
+      throw AuthException('Tidak bisa terhubung ke server');
+    } on TimeoutException {
+      throw AuthException('Koneksi timeout, coba lagi');
+    } on FormatException {
+      throw AuthException('Respons server tidak valid');
+    }
+  }
+
   // Update nama profil ke backend
   Future<void> updateProfileName({required String name}) async {
     final token = SessionStorage.getToken();
