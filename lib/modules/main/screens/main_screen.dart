@@ -28,6 +28,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: _screens[_currentIndex],
       floatingActionButton: Transform.translate(
         offset: const Offset(0, 14),

@@ -1,11 +1,18 @@
-import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import 'package:roadis/core/detection/models/detection_result.dart';
+import 'package:roadis/core/detection/services/detection_service.dart';
 import 'package:roadis/utils/app_colors.dart';
+import 'package:roadis/utils/widgets/show_snackbar.dart';
+import './report_form_screen.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class ReportCameraScreen extends StatefulWidget {
   const ReportCameraScreen({super.key});
@@ -15,71 +22,92 @@ class ReportCameraScreen extends StatefulWidget {
 }
 
 class _ReportCameraScreenState extends State<ReportCameraScreen> {
-  CameraController? _controller;
-  List<CameraDescription>? _cameras;
+  CameraController? _cameraController;
+  Future<void>? _initializeControllerFuture;
 
-  bool _isCameraReady = false;
-  bool _isCapturing = false;
-  bool _isGettingLocation = false;
+  final DetectionService _detectionService = DetectionService();
+
+  bool _isProcessing = false;
+  bool _modelLoaded = false;
 
   XFile? _image;
   Position? _currentPosition;
+  DetectionResult? _bestDetection;
 
   @override
   void initState() {
     super.initState();
     _initializeCamera();
-    _getCurrentLocation();
+    _loadModel();
   }
 
   Future<void> _initializeCamera() async {
     try {
-      _cameras = await availableCameras();
+      final cameras = await availableCameras();
 
-      if (_cameras == null || _cameras!.isEmpty) {
-        return;
+      if (cameras.isEmpty) {
+        throw Exception('Kamera tidak ditemukan.');
       }
 
-      final camera = _cameras!.firstWhere(
+      final camera = cameras.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.back,
-        orElse: () => _cameras!.first,
+        orElse: () => cameras.first,
       );
 
-      _controller = CameraController(
+      _cameraController = CameraController(
         camera,
         ResolutionPreset.high,
         enableAudio: false,
       );
 
-      await _controller!.initialize();
+      _initializeControllerFuture = _cameraController!.initialize();
 
-      if (!mounted) return;
-
-      setState(() {
-        _isCameraReady = true;
-      });
+      if (mounted) {
+        setState(() {});
+      }
     } catch (e) {
-      debugPrint('Camera error: $e');
+      if (mounted) {
+        Get.snackbar(
+          'Kamera',
+          'Gagal membuka kamera: $e',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     }
   }
 
-  Future<void> _getCurrentLocation() async {
-    setState(() {
-      _isGettingLocation = true;
-    });
+  Future<void> _loadModel() async {
+    try {
+      await _detectionService.loadModel();
 
+      if (mounted) {
+        setState(() {
+          _modelLoaded = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Gagal load model: $e');
+
+      if (mounted) {
+        showAwesomeSnackbar(
+          title: 'Gagal',
+          message: 'Gagal load model deteksi kerusakan.',
+          contentType: ContentType.failure,
+        );
+      }
+    }
+  }
+
+  Future<void> _getLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
       if (!serviceEnabled) {
-        await Geolocator.openLocationSettings();
-
-        if (mounted) {
-          setState(() {
-            _isGettingLocation = false;
-          });
-        }
-
+        Get.snackbar(
+          'Lokasi',
+          'Aktifkan GPS terlebih dahulu.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
         return;
       }
 
@@ -89,142 +117,91 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
         permission = await Geolocator.requestPermission();
       }
 
-      if (permission == LocationPermission.denied) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         Get.snackbar(
-          'Izin Lokasi Ditolak',
-          'ROADIS membutuhkan izin lokasi untuk membuat laporan.',
+          'Lokasi',
+          'Izin lokasi diperlukan.',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
         );
-
         return;
       }
 
-      if (permission == LocationPermission.deniedForever) {
-        Get.snackbar(
-          'Izin Lokasi Ditolak',
-          'Silakan aktifkan izin lokasi ROADIS melalui pengaturan aplikasi.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-        );
-
-        await Geolocator.openAppSettings();
-
-        return;
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
+      _currentPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
       );
-
-      if (!mounted) return;
-
-      setState(() {
-        _currentPosition = position;
-      });
-
-      debugPrint('Latitude: ${position.latitude}');
-      debugPrint('Longitude: ${position.longitude}');
     } catch (e) {
-      debugPrint('Location error: $e');
-
-      Get.snackbar(
-        'Lokasi Tidak Ditemukan',
-        'Gagal mendapatkan lokasi perangkat.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isGettingLocation = false;
-        });
-      }
+      debugPrint('Gagal mendapatkan lokasi: $e');
     }
   }
 
   Future<void> _takePicture() async {
-    if (_controller == null ||
-        !_controller!.value.isInitialized ||
-        _isCapturing) {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return;
     }
 
-    if (_currentPosition == null) {
-      Get.snackbar(
-        'Lokasi Belum Tersedia',
-        'Tunggu sampai lokasi GPS berhasil didapatkan.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
-
-      return;
-    }
+    if (_isProcessing) return;
 
     setState(() {
-      _isCapturing = true;
+      _isProcessing = true;
     });
 
     try {
-      final image = await _controller!.takePicture();
+      await _initializeControllerFuture;
+
+      final image = await _cameraController!.takePicture();
+
+      await _getLocation();
+
+      if (_currentPosition == null) {
+        throw Exception('Lokasi tidak berhasil didapatkan.');
+      }
+
+      DetectionResult? bestDetection;
+
+      if (_modelLoaded) {
+        final imageBytes = await image.readAsBytes();
+
+        final detections = await _detectionService.detect(imageBytes);
+
+        if (detections.isNotEmpty) {
+          bestDetection = detections.first;
+        }
+      }
+
+      _image = image;
+      _bestDetection = bestDetection;
 
       if (!mounted) return;
 
-      setState(() {
-        _image = image;
-      });
+      await Get.to(
+        () => ReportFormScreen(
+          image: image,
+          position: _currentPosition!,
+          detection: bestDetection,
+        ),
+      );
     } catch (e) {
-      debugPrint('Capture error: $e');
+      if (mounted) {
+        Get.snackbar(
+          'Gagal',
+          e.toString().replaceFirst('Exception: ', ''),
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
-          _isCapturing = false;
+          _isProcessing = false;
         });
       }
     }
   }
 
-  void _retakePicture() {
-    setState(() {
-      _image = null;
-    });
-  }
-
-  void _usePicture() {
-    if (_image == null || _currentPosition == null) return;
-
-    debugPrint('Foto: ${_image!.path}');
-    debugPrint('Latitude: ${_currentPosition!.latitude}');
-    debugPrint('Longitude: ${_currentPosition!.longitude}');
-
-    Get.snackbar(
-      'Laporan Siap',
-      'Foto dan lokasi berhasil didapatkan.',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppColors.primaryColor,
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-    );
-  }
-
   @override
   void dispose() {
-    _controller?.dispose();
+    _cameraController?.dispose();
+    _detectionService.dispose();
     super.dispose();
   }
 
@@ -232,223 +209,280 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: _image != null
-                ? Image.file(
-                    File(_image!.path),
-                    fit: BoxFit.cover,
-                  )
-                : _isCameraReady
-                    ? CameraPreview(_controller!)
-                    : const Center(
-                        child: CircularProgressIndicator(
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // CAMERA
+            Positioned.fill(
+              child:
+                  _cameraController != null &&
+                      _initializeControllerFuture != null
+                  ? FutureBuilder(
+                      future: _initializeControllerFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.done) {
+                          return CameraPreview(
+                            _cameraController!,
+                          ).animate().fadeIn(duration: 600.ms);
+                        }
+
+                        return const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        );
+                      },
+                    )
+                  : const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    ),
+            ),
+
+            // GRADIENT OVERLAY
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.65),
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.75),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // HEADER
+            Positioned(
+              top: 16,
+              left: 16,
+              right: 16,
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Get.back(),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.35),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Text(
+                    'Laporkan Kerusakan',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.2, end: 0),
+
+            // TITLE
+            Positioned(
+                  top: 95,
+                  left: 24,
+                  right: 24,
+                  child: Column(
+                    children: [
+                      Text(
+                        'Deteksi Kerusakan Jalan',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
                           color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-          ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Arahkan kamera ke bagian jalan yang rusak',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 150.ms, duration: 600.ms)
+                .slideY(begin: -0.15, end: 0),
 
-          Positioned.fill(
-            child: SafeArea(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
+            // CAMERA FRAME
+            Center(
+                  child: Container(
+                    width: 280,
+                    height: 360,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.8),
+                        width: 2,
+                      ),
                     ),
-                    child: Row(
+                    child: Stack(
                       children: [
-                        GestureDetector(
-                          onTap: () => Get.back(),
-                          child: Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.45),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.arrow_back_rounded,
-                              color: Colors.white,
-                            ),
+                        Positioned(top: -2, left: -2, child: _corner()),
+                        Positioned(
+                          top: -2,
+                          right: -2,
+                          child: Transform.rotate(
+                            angle: math.pi / 2,
+                            child: _corner(),
                           ),
                         ),
-                        const SizedBox(width: 14),
-                        Text(
-                          _image == null
-                              ? 'Report Kerusakan Jalan'
-                              : 'Preview Foto',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                        Positioned(
+                          bottom: -2,
+                          left: -2,
+                          child: Transform.rotate(
+                            angle: -math.pi / 2,
+                            child: _corner(),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: -2,
+                          right: -2,
+                          child: Transform.rotate(
+                            angle: math.pi,
+                            child: _corner(),
                           ),
                         ),
                       ],
                     ),
                   ),
+                )
+                .animate()
+                .fadeIn(delay: 300.ms, duration: 700.ms)
+                .scale(
+                  begin: const Offset(0.92, 0.92),
+                  end: const Offset(1, 1),
+                ),
 
-                  if (_image == null)
-                    Expanded(
-                      child: Center(
-                        child: Container(
-                          width: MediaQuery.of(context).size.width - 50,
-                          height: MediaQuery.of(context).size.height * 0.48,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.8),
-                              width: 2,
+            // AI STATUS
+            Positioned(
+                  left: 24,
+                  right: 24,
+                  bottom: 130,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.45),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withOpacity(0.15)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _modelLoaded
+                              ? Icons.auto_awesome
+                              : Icons.hourglass_top,
+                          color: _modelLoaded
+                              ? AppColors.primaryColor
+                              : Colors.orange,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _modelLoaded
+                                ? 'AI YOLO11s siap mendeteksi kerusakan'
+                                : 'Menyiapkan AI YOLO11s...',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 12,
                             ),
-                            borderRadius: BorderRadius.circular(20),
                           ),
                         ),
-                      ),
-                    )
-                  else
-                    const Spacer(),
-
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      25,
-                      10,
-                      25,
-                      30,
+                      ],
                     ),
-                    child: _image == null
-                        ? Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    _currentPosition != null
-                                        ? Icons.location_on_rounded
-                                        : Icons.location_searching_rounded,
-                                    color: _currentPosition != null
-                                        ? Colors.greenAccent
-                                        : Colors.orangeAccent,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _isGettingLocation
-                                        ? 'Mencari lokasi...'
-                                        : _currentPosition != null
-                                            ? 'Lokasi GPS tersedia'
-                                            : 'Lokasi belum tersedia',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Arahkan kamera ke kerusakan jalan',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 22),
-                              GestureDetector(
-                                onTap: _takePicture,
-                                child: Container(
-                                  width: 76,
-                                  height: 76,
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 3,
-                                    ),
-                                  ),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: _isCapturing
-                                          ? Colors.grey
-                                          : Colors.white,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: _isCapturing
-                                        ? const Padding(
-                                            padding: EdgeInsets.all(18),
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
-                                          )
-                                        : null,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        : Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: _retakePicture,
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    side: const BorderSide(
-                                      color: Colors.white,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 15,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Ambil Ulang',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: _usePicture,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        AppColors.primaryColor,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 15,
-                                    ),
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Gunakan Foto',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
                   ),
-                ],
-              ),
-            ),
-          ),
-        ],
+                )
+                .animate()
+                .fadeIn(delay: 450.ms, duration: 500.ms)
+                .slideY(begin: 0.2, end: 0),
+
+            // BUTTON
+            Positioned(
+                  left: 24,
+                  right: 24,
+                  bottom: 30,
+                  child: SizedBox(
+                    height: 58,
+                    child: ElevatedButton(
+                      onPressed: _isProcessing ? null : _takePicture,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryColor,
+                        disabledBackgroundColor: Colors.grey.shade700,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: _isProcessing
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.camera_alt_rounded,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'Ambil Foto & Deteksi',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 600.ms, duration: 500.ms)
+                .slideY(begin: 0.25, end: 0),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _corner() {
+    return Container(
+      width: 35,
+      height: 35,
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Colors.white, width: 4),
+          left: BorderSide(color: Colors.white, width: 4),
+        ),
       ),
     );
   }
