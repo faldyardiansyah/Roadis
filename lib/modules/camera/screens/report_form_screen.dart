@@ -1,11 +1,13 @@
 import 'dart:io';
-
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geocoding/geocoding.dart' as geo;
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:latlong2/latlong.dart';
 
 import 'package:roadis/core/detection/models/detection_result.dart';
 import 'package:roadis/core/laporan/models/wilayah_model.dart';
@@ -30,10 +32,19 @@ class ReportFormScreen extends StatefulWidget {
 }
 
 class _ReportFormScreenState extends State<ReportFormScreen> {
+  static const double _maxShiftMeters = 8; // batas geser pin dari GPS
+
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _judulController;
   late final TextEditingController _deskripsiController;
+
+  final MapController _mapController = MapController();
+  final Distance _distance = const Distance();
+  late final LatLng _gpsPoint; // titik asli dari GPS
+  late LatLng _pickedPoint; // titik pin yang dipilih
+
+  final DateTime _waktu = DateTime.now(); // jam saat laporan dibuat
 
   String? _selectedType;
   int? _selectedWilayahId;
@@ -50,29 +61,126 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     'Retak Melintang',
   ];
 
+  // pagi sampai siang (06:00-14:59) = AI paling bagus
+  bool get _isGoodTime => _waktu.hour >= 6 && _waktu.hour < 15;
+
+  // sore (15:00-17:59) = mulai kurang bagus
+  bool get _isEvening => _waktu.hour >= 15 && _waktu.hour < 18;
+
   @override
   void initState() {
     super.initState();
 
-    final detectionName = widget.detection?.displayName;
-
-    _selectedType = detectionName;
-
+    final det = widget.detection;
+    // isi otomatis hanya kalau waktunya bagus dan AI yakin
+    final confident = det != null && det.confidence >= 0.8 && _isGoodTime;
+    final name = confident ? det.displayName : null;
+    _selectedType = name;
     _judulController = TextEditingController(
-      text: detectionName != null ? 'Kerusakan $detectionName' : '',
+      text: name != null ? 'Kerusakan $name' : '',
+    );
+    _deskripsiController = TextEditingController(
+      text: name != null ? 'Ditemukan $name pada jalan.' : '',
     );
 
-    _deskripsiController = TextEditingController(
-      text: detectionName != null ? 'Ditemukan $detectionName pada jalan.' : '',
-    );
+    _gpsPoint = LatLng(widget.position.latitude, widget.position.longitude);
+    _pickedPoint = _gpsPoint;
+    _detectWilayah(_pickedPoint);
   }
 
   @override
   void dispose() {
     _judulController.dispose();
     _deskripsiController.dispose();
+    _mapController.dispose();
     super.dispose();
   }
+
+  // ---------- JAM ----------
+
+  String _two(int n) => n.toString().padLeft(2, '0'); 
+
+  String get _jamText => '${_two(_waktu.hour)}:${_two(_waktu.minute)}';
+
+  String get _tanggalText =>
+      '${_two(_waktu.day)}/${_two(_waktu.month)}/${_waktu.year}';
+
+  // ---------- LOKASI & WILAYAH ----------
+
+  // kalau titik di luar zona, tempel ke tepi lingkaran
+  LatLng _clampToZone(LatLng p) {
+    final d = _distance.distance(_gpsPoint, p);
+    if (d <= _maxShiftMeters) return p;
+    final bearing = _distance.bearing(_gpsPoint, p);
+    return _distance.offset(_gpsPoint, _maxShiftMeters, bearing);
+  }
+
+  // pin pindah ke titik yang diketuk (maksimal di tepi zona)
+  void _onMapTap(TapPosition tapPosition, LatLng point) {
+    final outside = _distance.distance(_gpsPoint, point) > _maxShiftMeters;
+    final clamped = _clampToZone(point);
+
+    setState(() => _pickedPoint = clamped);
+    _detectWilayah(clamped);
+
+    if (outside) {
+      Get.snackbar(
+        'Di luar zona',
+        'Titik hanya boleh dalam ${_maxShiftMeters.toInt()} m dari lokasi GPS.',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+    }
+  }
+
+  // balikin pin ke titik GPS
+  void _resetPoint() {
+    setState(() => _pickedPoint = _gpsPoint);
+    _mapController.move(_gpsPoint, 20);
+    _detectWilayah(_gpsPoint);
+  }
+
+  // buang kata kabupaten/kota/dll biar nama gampang dicocokin
+  String _norm(String s) => s
+      .toLowerCase()
+      .replaceAll(
+        RegExp(r'kabupaten|kab\.|kota|kecamatan|kec\.|kelurahan|desa'),
+        '',
+      )
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+
+  // cari nama wilayah dari koordinat, lalu cocokin ke daftar wilayah
+  Future<void> _detectWilayah(LatLng p) async {
+    if (widget.wilayahList.isEmpty) return;
+    try {
+      final marks = await geo.placemarkFromCoordinates(p.latitude, p.longitude);
+      if (marks.isEmpty) return;
+
+      final m = marks.first;
+      final candidates = [
+        m.subLocality,
+        m.locality,
+        m.subAdministrativeArea,
+        m.administrativeArea,
+      ].whereType<String>().map(_norm).where((e) => e.isNotEmpty).toList();
+
+      debugPrint('Geocode: $candidates'); // lihat ini buat nyocokin nama
+
+      for (final w in widget.wilayahList) {
+        final name = _norm(w.nama);
+        if (name.isEmpty) continue;
+        if (candidates.any((c) => c.contains(name) || name.contains(c))) {
+          if (mounted) setState(() => _selectedWilayahId = w.id);
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('Gagal deteksi wilayah: $e');
+    }
+  }
+
+  // ---------- SUBMIT ----------
 
   Future<void> _submitReport() async {
     if (!_formKey.currentState!.validate()) {
@@ -99,8 +207,13 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         'tipe_kerusakan': _selectedType,
         'wilayah_id': _selectedWilayahId,
 
-        'latitude': widget.position.latitude,
-        'longitude': widget.position.longitude,
+        'latitude': _pickedPoint.latitude, // titik pin
+        'longitude': _pickedPoint.longitude,
+        'gps_latitude': widget.position.latitude, // titik GPS asli
+        'gps_longitude': widget.position.longitude,
+        'lokasi_digeser': _distance.distance(_gpsPoint, _pickedPoint) > 0.5,
+
+        'waktu_laporan': _waktu.toIso8601String(), // jam laporan dibuat
 
         'image_path': widget.image.path,
 
@@ -139,6 +252,8 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     }
   }
 
+  // ---------- BUILD ----------
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -154,7 +269,10 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
           ),
           title: Text(
             'Detail Laporan',
-            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600),
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         body: Form(
@@ -172,17 +290,25 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                       begin: const Offset(0.95, 0.95),
                       end: const Offset(1, 1),
                     ),
-      
+
                 const SizedBox(height: 18),
-      
+
                 // HASIL AI
                 _buildDetectionCard()
                     .animate()
                     .fadeIn(delay: 100.ms, duration: 500.ms)
                     .slideX(begin: 0.08, end: 0),
-      
+
+                const SizedBox(height: 12),
+
+                // JAM
+                _buildTimeCard()
+                    .animate()
+                    .fadeIn(delay: 150.ms, duration: 500.ms)
+                    .slideX(begin: 0.08, end: 0),
+
                 const SizedBox(height: 18),
-      
+
                 // FORM
                 Text(
                   'Informasi Laporan',
@@ -191,25 +317,25 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                     fontWeight: FontWeight.w700,
                   ),
                 ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
-      
+
                 const SizedBox(height: 14),
-      
+
                 // WILAYAH
                 _buildWilayahField()
                     .animate()
                     .fadeIn(delay: 250.ms, duration: 450.ms)
                     .slideY(begin: 0.1, end: 0),
-      
+
                 const SizedBox(height: 14),
-      
+
                 // TIPE KERUSAKAN
                 _buildTypeField()
                     .animate()
                     .fadeIn(delay: 300.ms, duration: 450.ms)
                     .slideY(begin: 0.1, end: 0),
-      
+
                 const SizedBox(height: 14),
-      
+
                 // JUDUL
                 _buildTextField(
                       controller: _judulController,
@@ -220,9 +346,9 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                     .animate()
                     .fadeIn(delay: 350.ms, duration: 450.ms)
                     .slideY(begin: 0.1, end: 0),
-      
+
                 const SizedBox(height: 14),
-      
+
                 // DESKRIPSI
                 _buildTextField(
                       controller: _deskripsiController,
@@ -234,17 +360,17 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                     .animate()
                     .fadeIn(delay: 400.ms, duration: 450.ms)
                     .slideY(begin: 0.1, end: 0),
-      
+
                 const SizedBox(height: 18),
-      
-                // LOKASI
-                _buildLocationCard()
+
+                // PETA
+                _buildMapCard()
                     .animate()
                     .fadeIn(delay: 450.ms, duration: 450.ms)
                     .slideY(begin: 0.1, end: 0),
-      
+
                 const SizedBox(height: 24),
-      
+
                 // SUBMIT
                 SizedBox(
                       width: double.infinity,
@@ -358,6 +484,14 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  'Periksa kembali, hasil AI bisa keliru',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white70,
+                    fontSize: 10,
+                  ),
+                ),
               ],
             ),
           ),
@@ -376,6 +510,202 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  // kartu jam: hijau (pagi-siang), oranye (sore), merah (malam)
+  Widget _buildTimeCard() {
+    final Color color;
+    final IconData icon;
+    final String status;
+    final String note;
+
+    if (_isGoodTime) {
+      color = Colors.green;
+      icon = Icons.wb_sunny_rounded;
+      status = 'Waktu ideal untuk AI';
+      note = 'Pagi sampai siang, hasil deteksi paling akurat.';
+    } else if (_isEvening) {
+      color = Colors.orange;
+      icon = Icons.wb_twilight_rounded;
+      status = 'Cahaya mulai berkurang';
+      note = 'Sore hari, akurasi AI bisa menurun. Periksa kembali hasilnya.';
+    } else {
+      color = Colors.red;
+      icon = Icons.nights_stay_rounded;
+      status = 'Malam hari';
+      note = 'Hasil AI kurang bisa diandalkan. Pastikan jenis kerusakan benar.';
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$_tanggalText  •  $_jamText',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  status,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  note,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // kartu peta: pin bisa dipindah, tapi cuma di dalam lingkaran
+  Widget _buildMapCard() {
+    final moved = _distance.distance(_gpsPoint, _pickedPoint) > 0.5;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Lokasi Kerusakan',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (moved)
+                TextButton.icon(
+                  onPressed: _resetPoint,
+                  icon: const Icon(Icons.my_location, size: 16),
+                  label: Text(
+                    'Reset ke GPS',
+                    style: GoogleFonts.poppins(fontSize: 12),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: SizedBox(
+              height: 260,
+              child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: _gpsPoint,
+                  initialZoom: 20,
+                  minZoom: 17,
+                  maxZoom: 21,
+                  onTap: _onMapTap,
+                  interactionOptions: InteractionOptions(
+                    flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                  ),
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.example.roadis',
+                    maxNativeZoom: 19,
+                    maxZoom: 21,
+                  ),
+                  // lingkaran zona 8 m
+                  CircleLayer(
+                    circles: [
+                      CircleMarker(
+                        point: _gpsPoint,
+                        radius: _maxShiftMeters,
+                        useRadiusInMeter: true,
+                        color: AppColors.primaryColor.withOpacity(0.15),
+                        borderColor: AppColors.primaryColor,
+                        borderStrokeWidth: 2,
+                      ),
+                    ],
+                  ),
+                  // pin merah
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: _pickedPoint,
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.topCenter,
+                        child: const Icon(
+                          Icons.location_on,
+                          color: Colors.red,
+                          size: 40,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${_pickedPoint.latitude.toStringAsFixed(6)}, '
+            '${_pickedPoint.longitude.toStringAsFixed(6)}',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            'Ketuk peta untuk menggeser titik. Maksimal ${_maxShiftMeters.toInt()} m dari lokasi GPS (area biru).',
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              color: Colors.grey.shade600,
+            ),
+          ),
         ],
       ),
     );
@@ -484,58 +814,6 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
           },
         ),
       ],
-    );
-  }
-
-  Widget _buildLocationCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppColors.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.location_on_rounded,
-              color: AppColors.primaryColor,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Lokasi Terdeteksi',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${widget.position.latitude.toStringAsFixed(6)}, '
-                  '${widget.position.longitude.toStringAsFixed(6)}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 

@@ -1,5 +1,5 @@
+import 'dart:io';
 import 'dart:math' as math;
-
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -29,6 +29,7 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
 
   bool _isProcessing = false;
   bool _modelLoaded = false;
+  bool _isFlashOn = false;
 
   XFile? _image;
   Position? _currentPosition;
@@ -62,15 +63,65 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
 
       _initializeControllerFuture = _cameraController!.initialize();
 
+      await _initializeControllerFuture;
+
+      try {
+        await _cameraController!.setExposureOffset(0.5);
+      } catch (e) {
+        debugPrint('Exposure tidak didukung: $e');
+      }
+
       if (mounted) {
         setState(() {});
       }
     } catch (e) {
       if (mounted) {
-        Get.snackbar(
-          'Kamera',
-          'Gagal membuka kamera: $e',
-          snackPosition: SnackPosition.BOTTOM,
+        showAwesomeSnackbar(
+          title: 'Gagal',
+          message: 'Gagal mengakses kamera: $e',
+          contentType: ContentType.failure,
+        );
+      }
+    }
+  }
+
+  Future<void> _turnOffFlash() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+    try {
+      await _cameraController!.setFlashMode(FlashMode.off);
+    } catch (e) {
+      debugPrint('Gagal matikan flash: $e');
+    }
+    if (mounted) setState(() => _isFlashOn = false);
+  }
+
+  Future<void> _toggleFlash() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+
+    try {
+      if (_isFlashOn) {
+        await _cameraController!.setFlashMode(FlashMode.off);
+      } else {
+        await _cameraController!.setFlashMode(FlashMode.torch);
+      }
+
+      if (mounted) {
+        setState(() {
+          _isFlashOn = !_isFlashOn;
+        });
+      }
+    } catch (e) {
+      debugPrint('Flash tidak tersedia: $e');
+
+      if (mounted) {
+        showAwesomeSnackbar(
+          title: 'Flash',
+          message: 'Flash tidak tersedia pada kamera ini.',
+          contentType: ContentType.failure,
         );
       }
     }
@@ -103,10 +154,10 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
       if (!serviceEnabled) {
-        Get.snackbar(
-          'Lokasi',
-          'Aktifkan GPS terlebih dahulu.',
-          snackPosition: SnackPosition.BOTTOM,
+        showAwesomeSnackbar(
+          title: 'Lokasi',
+          message: 'Aktifkan GPS terlebih dahulu.',
+          contentType: ContentType.failure,
         );
         return;
       }
@@ -119,10 +170,10 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
 
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        Get.snackbar(
-          'Lokasi',
-          'Izin lokasi diperlukan.',
-          snackPosition: SnackPosition.BOTTOM,
+        showAwesomeSnackbar(
+          title: 'Lokasi',
+          message: 'Izin lokasi diperlukan.',
+          contentType: ContentType.failure,
         );
         return;
       }
@@ -148,24 +199,30 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
 
     try {
       await _initializeControllerFuture;
-
       final image = await _cameraController!.takePicture();
-
+      await _turnOffFlash();
       await _getLocation();
-
       if (_currentPosition == null) {
         throw Exception('Lokasi tidak berhasil didapatkan.');
       }
 
       DetectionResult? bestDetection;
+      XFile displayImage = image;
 
       if (_modelLoaded) {
         final imageBytes = await image.readAsBytes();
-
         final detections = await _detectionService.detect(imageBytes);
 
         if (detections.isNotEmpty) {
           bestDetection = detections.first;
+
+          final annotated = _detectionService.drawDetections(
+            imageBytes,
+            detections,
+          );
+          final path = '${image.path}_det.jpg';
+          await File(path).writeAsBytes(annotated);
+          displayImage = XFile(path);
         }
       }
 
@@ -176,17 +233,17 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
 
       await Get.to(
         () => ReportFormScreen(
-          image: image,
+          image: displayImage,
           position: _currentPosition!,
           detection: bestDetection,
         ),
       );
     } catch (e) {
       if (mounted) {
-        Get.snackbar(
-          'Gagal',
-          e.toString().replaceFirst('Exception: ', ''),
-          snackPosition: SnackPosition.BOTTOM,
+        showAwesomeSnackbar(
+          title: 'Gagal',
+          message: e.toString().replaceFirst('Exception: ', ''),
+          contentType: ContentType.failure,
         );
       }
     } finally {
@@ -200,6 +257,10 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
 
   @override
   void dispose() {
+    if (_cameraController != null && _cameraController!.value.isInitialized) {
+      _cameraController!.setFlashMode(FlashMode.off);
+    }
+
     _cameraController?.dispose();
     _detectionService.dispose();
     super.dispose();
@@ -279,12 +340,35 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  Text(
-                    'Laporkan Kerusakan',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: Text(
+                      'Laporkan Kerusakan',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _toggleFlash,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: _isFlashOn
+                            ? AppColors.primaryColor
+                            : Colors.black.withOpacity(0.35),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _isFlashOn
+                            ? Icons.flash_on_rounded
+                            : Icons.flash_off_rounded,
+                        color: Colors.white,
+                        size: 21,
+                      ),
                     ),
                   ),
                 ],

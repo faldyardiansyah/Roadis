@@ -49,6 +49,7 @@ dependencies:
   url_launcher: ^6.3.2
   image: ^4.10.1
   tflite_flutter: ^0.12.1
+  geocoding: ^3.0.0
 
 dev_dependencies:
   flutter_test:
