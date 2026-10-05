@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
 import 'package:roadis/routes/app_routes.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -229,11 +230,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
                 if (list.isEmpty) {
                   return Center(
-                    child: Text(
-                      'Belum ada laporan.',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        color: Colors.grey.shade500,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                      child: Column(
+                        children: [
+                          Lottie.asset('assets/lotties/404.json', width: 300, height: 230),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Belum ada laporan.',
+                            style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppColors.greyColor),
+                          ),
+                        ],
                       ),
                     ),
                   );

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:camera/camera.dart';
@@ -6,9 +7,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
+import 'package:roadis/core/api_config.dart';
+import 'package:roadis/auth/services/session_storage.dart';
 import 'package:roadis/core/detection/models/detection_result.dart';
 import 'package:roadis/core/detection/services/detection_service.dart';
+import 'package:roadis/core/laporan/models/wilayah_model.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/utils/widgets/show_snackbar.dart';
 import './report_form_screen.dart';
@@ -30,16 +35,20 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
   bool _isProcessing = false;
   bool _modelLoaded = false;
   bool _isFlashOn = false;
+  bool _isLoadingWilayah = false;
 
   XFile? _image;
   Position? _currentPosition;
   DetectionResult? _bestDetection;
+
+  List<WilayahModel> _wilayahList = [];
 
   @override
   void initState() {
     super.initState();
     _initializeCamera();
     _loadModel();
+    _loadWilayah();
   }
 
   Future<void> _initializeCamera() async {
@@ -89,12 +98,16 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return;
     }
+
     try {
       await _cameraController!.setFlashMode(FlashMode.off);
     } catch (e) {
       debugPrint('Gagal matikan flash: $e');
     }
-    if (mounted) setState(() => _isFlashOn = false);
+
+    if (mounted) {
+      setState(() => _isFlashOn = false);
+    }
   }
 
   Future<void> _toggleFlash() async {
@@ -149,6 +162,76 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
     }
   }
 
+  Future<void> _loadWilayah() async {
+    if (_isLoadingWilayah) return;
+
+    setState(() {
+      _isLoadingWilayah = true;
+    });
+
+    try {
+      final token = SessionStorage.getToken();
+
+      final response = await http
+          .get(
+            Uri.parse('${ApiConfig.baseUrl}/warga/wilayah'),
+            headers: {
+              'Content-Type': 'application/json',
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
+
+      debugPrint('GET WILAYAH STATUS: ${response.statusCode}');
+      debugPrint('GET WILAYAH BODY: ${response.body}');
+
+      if (response.statusCode != 200) {
+        throw Exception('Gagal mengambil wilayah (${response.statusCode})');
+      }
+
+      final body = jsonDecode(response.body);
+
+      final data = body['data'];
+
+      if (data is! List) {
+        throw Exception('Format data wilayah tidak valid.');
+      }
+
+      final wilayah = data
+          .whereType<Map<String, dynamic>>()
+          .map((json) {
+            final idValue = json['id'] ?? json['ID'];
+
+            final namaValue = json['nama'] ?? json['Nama'] ?? json['name'];
+
+            return WilayahModel(
+              id: idValue is num
+                  ? idValue.toInt()
+                  : int.tryParse(idValue?.toString() ?? '') ?? 0,
+              nama: namaValue?.toString() ?? '',
+            );
+          })
+          .where((wilayah) => wilayah.id != 0 && wilayah.nama.isNotEmpty)
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _wilayahList = wilayah;
+        });
+      }
+
+      debugPrint('WILAYAH BERHASIL DIAMBIL: ${_wilayahList.length}');
+    } catch (e) {
+      debugPrint('Gagal mengambil wilayah: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingWilayah = false;
+        });
+      }
+    }
+  }
+
   Future<void> _getLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -199,9 +282,17 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
 
     try {
       await _initializeControllerFuture;
+
+      if (_wilayahList.isEmpty) {
+        await _loadWilayah();
+      }
+
       final image = await _cameraController!.takePicture();
+
       await _turnOffFlash();
+
       await _getLocation();
+
       if (_currentPosition == null) {
         throw Exception('Lokasi tidak berhasil didapatkan.');
       }
@@ -211,6 +302,7 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
 
       if (_modelLoaded) {
         final imageBytes = await image.readAsBytes();
+
         final detections = await _detectionService.detect(imageBytes);
 
         if (detections.isNotEmpty) {
@@ -220,8 +312,11 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
             imageBytes,
             detections,
           );
+
           final path = '${image.path}_det.jpg';
+
           await File(path).writeAsBytes(annotated);
+
           displayImage = XFile(path);
         }
       }
@@ -236,6 +331,7 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
           image: displayImage,
           position: _currentPosition!,
           detection: bestDetection,
+          wilayahList: _wilayahList,
         ),
       );
     } catch (e) {
@@ -408,39 +504,33 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
                 .slideY(begin: -0.15, end: 0),
 
             // CAMERA FRAME
+            // CAMERA FRAME
             Center(
-                  child: Container(
+                  child: SizedBox(
                     width: 280,
                     height: 360,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(28),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.8),
-                        width: 2,
-                      ),
-                    ),
                     child: Stack(
                       children: [
-                        Positioned(top: -2, left: -2, child: _corner()),
+                        Positioned(top: 0, left: 0, child: _corner()),
                         Positioned(
-                          top: -2,
-                          right: -2,
+                          top: 0,
+                          right: 0,
                           child: Transform.rotate(
                             angle: math.pi / 2,
                             child: _corner(),
                           ),
                         ),
                         Positioned(
-                          bottom: -2,
-                          left: -2,
+                          bottom: 0,
+                          left: 0,
                           child: Transform.rotate(
                             angle: -math.pi / 2,
                             child: _corner(),
                           ),
                         ),
                         Positioned(
-                          bottom: -2,
-                          right: -2,
+                          bottom: 0,
+                          right: 0,
                           child: Transform.rotate(
                             angle: math.pi,
                             child: _corner(),
@@ -480,7 +570,7 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
                               : Icons.hourglass_top,
                           color: _modelLoaded
                               ? AppColors.primaryColor
-                              : Colors.orange,
+                              : AppColors.orangeColor,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -513,7 +603,7 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
                       onPressed: _isProcessing ? null : _takePicture,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryColor,
-                        disabledBackgroundColor: Colors.grey.shade700,
+                        disabledBackgroundColor: AppColors.greyColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -559,13 +649,15 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
   }
 
   Widget _corner() {
-    return Container(
-      width: 35,
-      height: 35,
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Colors.white, width: 4),
-          left: BorderSide(color: Colors.white, width: 4),
+    return SizedBox(
+      width: 42,
+      height: 42,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: AppColors.whiteColor, width: 4),
+            left: BorderSide(color: AppColors.whiteColor, width: 4),
+          ),
         ),
       ),
     );

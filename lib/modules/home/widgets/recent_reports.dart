@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/modules/home/controllers/home_controller.dart';
 import 'package:roadis/core/laporan/models/laporan_model.dart';
@@ -64,17 +65,19 @@ class RecentReports extends StatelessWidget {
           final recent = c.recentReports;
 
           if (recent.isEmpty) {
-            return Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.whiteColor,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Text(
-                'Belum ada laporan.',
-                style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppColors.greyColor),
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                child: Column(
+                  children: [
+                    Lottie.asset('assets/lotties/404.json', width: 300, height: 230),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Belum ada laporan.',
+                      style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppColors.greyColor),
+                    ),
+                  ],
+                ),
               ),
             );
           }

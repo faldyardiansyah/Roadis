@@ -12,6 +12,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:roadis/core/detection/models/detection_result.dart';
 import 'package:roadis/core/laporan/models/wilayah_model.dart';
 import 'package:roadis/utils/app_colors.dart';
+import 'package:roadis/utils/widgets/show_snackbar.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class ReportFormScreen extends StatefulWidget {
   final XFile image;
@@ -32,7 +34,7 @@ class ReportFormScreen extends StatefulWidget {
 }
 
 class _ReportFormScreenState extends State<ReportFormScreen> {
-  static const double _maxShiftMeters = 8; // batas geser pin dari GPS
+  static const double _maxShiftMeters = 5; // batas geser pin dari GPS
 
   final _formKey = GlobalKey<FormState>();
 
@@ -96,16 +98,16 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     super.dispose();
   }
 
-  // ---------- JAM ----------
+  // JAM
 
-  String _two(int n) => n.toString().padLeft(2, '0'); 
+  String _two(int n) => n.toString().padLeft(2, '0');
 
   String get _jamText => '${_two(_waktu.hour)}:${_two(_waktu.minute)}';
 
   String get _tanggalText =>
       '${_two(_waktu.day)}/${_two(_waktu.month)}/${_waktu.year}';
 
-  // ---------- LOKASI & WILAYAH ----------
+  // LOKASI & WILAYAH
 
   // kalau titik di luar zona, tempel ke tepi lingkaran
   LatLng _clampToZone(LatLng p) {
@@ -124,11 +126,11 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     _detectWilayah(clamped);
 
     if (outside) {
-      Get.snackbar(
-        'Di luar zona',
-        'Titik hanya boleh dalam ${_maxShiftMeters.toInt()} m dari lokasi GPS.',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
+      showAwesomeSnackbar(
+        title: 'Titik di luar zona',
+        message:
+            'Titik yang diketuk berada di luar zona biru. Titik pin dipindahkan ke tepi zona.',
+        contentType: ContentType.warning,
       );
     }
   }
@@ -180,7 +182,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     }
   }
 
-  // ---------- SUBMIT ----------
+  //SUBMIT
 
   Future<void> _submitReport() async {
     if (!_formKey.currentState!.validate()) {
@@ -188,10 +190,10 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     }
 
     if (_selectedWilayahId == null) {
-      Get.snackbar(
-        'Wilayah belum dipilih',
-        'Silakan pilih wilayah laporan terlebih dahulu.',
-        snackPosition: SnackPosition.BOTTOM,
+      showAwesomeSnackbar(
+        title: 'Wilayah belum dipilih',
+        message: 'Silakan pilih wilayah laporan sebelum mengirim.',
+        contentType: ContentType.warning,
       );
       return;
     }
@@ -232,17 +234,21 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
       Get.back(result: reportData);
 
-      Get.snackbar(
-        'Berhasil',
-        'Data laporan siap dikirim.',
-        snackPosition: SnackPosition.BOTTOM,
+      showAwesomeSnackbar(
+        title: 'Laporan berhasil dikirim',
+        message: 'Terima kasih atas laporan Anda. Tim akan menindaklanjuti.',
+        contentType: ContentType.success,
       );
     } catch (e) {
-      Get.snackbar(
-        'Gagal',
-        'Terjadi kesalahan: $e',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      debugPrint('Gagal kirim laporan: $e');
+      if (mounted) {
+        showAwesomeSnackbar(
+          title: 'Gagal mengirim laporan',
+          message:
+              'Terjadi kesalahan saat mengirim laporan. Silakan coba lagi.',
+          contentType: ContentType.failure,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -252,26 +258,31 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     }
   }
 
-  // ---------- BUILD ----------
+  //  BUILD
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        backgroundColor: const Color(0xFFF7F9FC),
+        backgroundColor: AppColors.backgroundColor,
         appBar: AppBar(
           elevation: 0,
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
+          backgroundColor: AppColors.whiteColor,
+          surfaceTintColor: AppColors.whiteColor,
           leading: IconButton(
             onPressed: () => Get.back(),
-            icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              size: 20,
+              color: AppColors.darkTextColor,
+            ),
           ),
           title: Text(
             'Detail Laporan',
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
+              color: AppColors.darkTextColor,
             ),
           ),
         ),
@@ -315,6 +326,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
+                    color: AppColors.darkTextColor,
                   ),
                 ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
 
@@ -379,7 +391,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                         onPressed: _isSubmitting ? null : _submitReport,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryColor,
-                          disabledBackgroundColor: Colors.grey.shade400,
+                          disabledBackgroundColor: AppColors.lightGreyColor,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -390,7 +402,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                                 width: 24,
                                 height: 24,
                                 child: CircularProgressIndicator(
-                                  color: Colors.white,
+                                  color: AppColors.whiteColor,
                                   strokeWidth: 2.5,
                                 ),
                               )
@@ -399,13 +411,13 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                                 children: [
                                   const Icon(
                                     Icons.send_rounded,
-                                    color: Colors.white,
+                                    color: AppColors.whiteColor,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
                                     'Kirim Laporan',
                                     style: GoogleFonts.poppins(
-                                      color: Colors.white,
+                                      color: AppColors.whiteColor,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -430,7 +442,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       height: 220,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: Colors.grey.shade200,
+        color: AppColors.whitetr,
       ),
       clipBehavior: Clip.antiAlias,
       child: Image.file(File(widget.image.path), fit: BoxFit.cover),
@@ -445,10 +457,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            AppColors.primaryColor,
-            AppColors.primaryColor.withOpacity(0.75),
-          ],
+          colors: [AppColors.primaryColor, AppColors.primaryDarkColor],
         ),
         borderRadius: BorderRadius.circular(20),
       ),
@@ -458,10 +467,10 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
+              color: AppColors.whiteColor.withOpacity(0.18),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.auto_awesome, color: Colors.white),
+            child: const Icon(Icons.auto_awesome, color: AppColors.whiteColor),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -471,7 +480,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                 Text(
                   'Hasil Deteksi AI',
                   style: GoogleFonts.poppins(
-                    color: Colors.white70,
+                    color: AppColors.whiteColor.withOpacity(0.7),
                     fontSize: 12,
                   ),
                 ),
@@ -479,7 +488,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                 Text(
                   detection?.displayName ?? 'Tidak terdeteksi',
                   style: GoogleFonts.poppins(
-                    color: Colors.white,
+                    color: AppColors.whiteColor,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
@@ -488,7 +497,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                 Text(
                   'Periksa kembali, hasil AI bisa keliru',
                   style: GoogleFonts.poppins(
-                    color: Colors.white70,
+                    color: AppColors.whiteColor.withOpacity(0.7),
                     fontSize: 10,
                   ),
                 ),
@@ -499,13 +508,13 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.18),
+                color: AppColors.whiteColor.withOpacity(0.18),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 detection.confidencePercent,
                 style: GoogleFonts.poppins(
-                  color: Colors.white,
+                  color: AppColors.whiteColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -523,17 +532,17 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     final String note;
 
     if (_isGoodTime) {
-      color = Colors.green;
+      color = AppColors.greenColor;
       icon = Icons.wb_sunny_rounded;
       status = 'Waktu ideal untuk AI';
       note = 'Pagi sampai siang, hasil deteksi paling akurat.';
     } else if (_isEvening) {
-      color = Colors.orange;
+      color = AppColors.orangeColor;
       icon = Icons.wb_twilight_rounded;
       status = 'Cahaya mulai berkurang';
       note = 'Sore hari, akurasi AI bisa menurun. Periksa kembali hasilnya.';
     } else {
-      color = Colors.red;
+      color = AppColors.redColor;
       icon = Icons.nights_stay_rounded;
       status = 'Malam hari';
       note = 'Hasil AI kurang bisa diandalkan. Pastikan jenis kerusakan benar.';
@@ -567,7 +576,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                   '$_tanggalText  •  $_jamText',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: Colors.grey.shade700,
+                    color: AppColors.greyColor,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -584,7 +593,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                   note,
                   style: GoogleFonts.poppins(
                     fontSize: 11,
-                    color: Colors.grey.shade700,
+                    color: AppColors.greyColor,
                   ),
                 ),
               ],
@@ -603,9 +612,9 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.whiteColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -618,16 +627,24 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
+                    color: AppColors.darkTextColor,
                   ),
                 ),
               ),
               if (moved)
                 TextButton.icon(
                   onPressed: _resetPoint,
-                  icon: const Icon(Icons.my_location, size: 16),
+                  icon: const Icon(
+                    Icons.my_location,
+                    size: 16,
+                    color: AppColors.primaryColor,
+                  ),
                   label: Text(
                     'Reset ke GPS',
-                    style: GoogleFonts.poppins(fontSize: 12),
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppColors.primaryColor,
+                    ),
                   ),
                 ),
             ],
@@ -680,7 +697,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                         alignment: Alignment.topCenter,
                         child: const Icon(
                           Icons.location_on,
-                          color: Colors.red,
+                          color: AppColors.redColor,
                           size: 40,
                         ),
                       ),
@@ -697,13 +714,14 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w600,
+              color: AppColors.darkTextColor,
             ),
           ),
           Text(
             'Ketuk peta untuk menggeser titik. Maksimal ${_maxShiftMeters.toInt()} m dari lokasi GPS (area biru).',
             style: GoogleFonts.poppins(
               fontSize: 11,
-              color: Colors.grey.shade600,
+              color: AppColors.greyColor,
             ),
           ),
         ],
@@ -730,7 +748,10 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
               value: wilayah.id,
               child: Text(
                 wilayah.nama,
-                style: GoogleFonts.poppins(fontSize: 14),
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: AppColors.darkTextColor,
+                ),
               ),
             );
           }).toList(),
@@ -767,7 +788,13 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
           items: _jenisKerusakan.map((jenis) {
             return DropdownMenuItem<String>(
               value: jenis,
-              child: Text(jenis, style: GoogleFonts.poppins(fontSize: 14)),
+              child: Text(
+                jenis,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: AppColors.darkTextColor,
+                ),
+              ),
             );
           }).toList(),
           onChanged: (value) {
@@ -803,7 +830,10 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         TextFormField(
           controller: controller,
           maxLines: maxLines,
-          style: GoogleFonts.poppins(fontSize: 14),
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: AppColors.darkTextColor,
+          ),
           decoration: _inputDecoration(icon, hint),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -820,33 +850,40 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
   Widget _label(String text) {
     return Text(
       text,
-      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+      style: GoogleFonts.poppins(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppColors.darkTextColor,
+      ),
     );
   }
 
   InputDecoration _inputDecoration(IconData icon, String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.poppins(color: Colors.grey.shade400, fontSize: 13),
-      prefixIcon: Icon(icon, size: 20),
+      hintStyle: GoogleFonts.poppins(
+        color: AppColors.lightGreyColor,
+        fontSize: 13,
+      ),
+      prefixIcon: Icon(icon, size: 20, color: AppColors.greyColor),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: AppColors.whiteColor,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide(color: Colors.grey.shade200),
+        borderSide: BorderSide(color: AppColors.borderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide(color: Colors.grey.shade200),
+        borderSide: BorderSide(color: AppColors.borderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: BorderSide(color: AppColors.primaryColor, width: 1.5),
+        borderSide: const BorderSide(color: AppColors.primaryColor, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: const BorderSide(color: Colors.red),
+        borderSide: const BorderSide(color: AppColors.redColor),
       ),
     );
   }

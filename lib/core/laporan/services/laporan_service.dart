@@ -1,14 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:http/http.dart' as http;
 import 'package:roadis/core/api_config.dart';
 import 'package:roadis/auth/services/session_storage.dart';
+
 import '../models/laporan_model.dart';
+import '../models/wilayah_model.dart';
 
 class LaporanException implements Exception {
   final String message;
+
   LaporanException(this.message);
+
   @override
   String toString() => message;
 }
@@ -24,11 +29,33 @@ class LaporanService {
     return _parseList(body);
   }
 
+  Future<List<WilayahModel>> getWilayah() async {
+    final body = await _get('/warga/wilayah');
+
+    final data = body['data'];
+
+    if (data == null) return [];
+
+    return (data as List)
+        .map(
+          (e) => WilayahModel.fromJson(
+            e as Map<String, dynamic>,
+          ),
+        )
+        .toList();
+  }
+
   List<LaporanModel> _parseList(Map<String, dynamic> body) {
     final data = body['data'];
+
     if (data == null) return [];
+
     return (data as List)
-        .map((e) => LaporanModel.fromJson(e as Map<String, dynamic>))
+        .map(
+          (e) => LaporanModel.fromJson(
+            e as Map<String, dynamic>,
+          ),
+        )
         .toList();
   }
 
@@ -47,9 +74,13 @@ class LaporanService {
           .timeout(const Duration(seconds: 15));
 
       final body = jsonDecode(res.body) as Map<String, dynamic>;
+
       if (res.statusCode == 200) return body;
+
       throw LaporanException(
-        body['error']?.toString() ?? body['message']?.toString() ?? 'Gagal mengambil data',
+        body['error']?.toString() ??
+            body['message']?.toString() ??
+            'Gagal mengambil data',
       );
     } on SocketException {
       throw LaporanException('Tidak bisa terhubung ke server');
