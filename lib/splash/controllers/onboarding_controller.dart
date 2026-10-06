@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:get/get.dart';
 import 'package:roadis/routes/app_routes.dart';
+import 'package:roadis/auth/services/session_storage.dart';
 
 class OnboardingController extends GetxController {
   final List<String> pesanList = [
@@ -32,7 +33,14 @@ class OnboardingController extends GetxController {
   void _pindahHalaman() {
     Future.delayed(const Duration(seconds: 4), () {
       _timer?.cancel();
-      Get.offNamed(AppRoutes.splash1);
+
+      final token = SessionStorage.getToken();
+
+      if (token != null && token.isNotEmpty) {
+        Get.offAllNamed(AppRoutes.main);
+      } else {
+        Get.offNamed(AppRoutes.splash1);
+      }
     });
   }
 

@@ -7,6 +7,7 @@ import 'package:roadis/utils/app_colors.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:roadis/core/laporan/models/laporan_model.dart';
 import '../controllers/history_controller.dart';
+import 'detail_laporan_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -271,147 +272,155 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final statusLower = laporan.status.toLowerCase();
     final showQueueInfo = statusLower == 'menunggu' || statusLower == 'proses';
 
-    return Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade100),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
+    return GestureDetector(
+      onTap: () {
+        Get.to(
+          () =>  DetailLaporanScreen(laporan: laporan),
+          transition: Transition.rightToLeft,
+        );
+      },
+      child: Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade100),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.confirmation_number_outlined,
+                            size: 12,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              '#JK-${laporan.id}  •  ${laporan.waktuLaporan}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: laporan.status.statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        laporan.status.statusLabel,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: laporan.status.statusColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  laporan.tipeKerusakan.isNotEmpty
+                      ? laporan.tipeKerusakan
+                      : laporan.judul,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on_rounded,
+                      size: 14,
+                      color: Colors.pinkAccent,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        laporan.wilayahNama ?? laporan.judul,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (showQueueInfo) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.orange.withOpacity(0.15)),
+                    ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.confirmation_number_outlined,
-                          size: 12,
-                          color: Colors.grey.shade400,
+                        const Icon(
+                          Icons.access_time_rounded,
+                          size: 16,
+                          color: Colors.orange,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            '#JK-${laporan.id}  •  ${laporan.waktuLaporan}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            'Menunggu perbaikan jalan oleh dinas terkait',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.orange.shade800,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: laporan.status.statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      laporan.status.statusLabel,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: laporan.status.statusColor,
-                      ),
-                    ),
-                  ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                laporan.tipeKerusakan.isNotEmpty
-                    ? laporan.tipeKerusakan
-                    : laporan.judul,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.location_on_rounded,
-                    size: 14,
-                    color: Colors.pinkAccent,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      laporan.wilayahNama ?? laporan.judul,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (showQueueInfo) ...[
-                const SizedBox(height: 14),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.orange.withOpacity(0.15)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time_rounded,
-                        size: 16,
-                        color: Colors.orange,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Menunggu perbaikan jalan oleh dinas terkait',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.orange.shade800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
-            ],
-          ),
-        )
-        .animate()
-        .fadeIn(
-          delay: Duration(milliseconds: 100 + (index * 60)),
-          duration: 500.ms,
-        )
-        .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic);
+            ),
+          )
+          .animate()
+          .fadeIn(
+            delay: Duration(milliseconds: 100 + (index * 60)),
+            duration: 500.ms,
+          )
+          .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic),
+    );
   }
 }

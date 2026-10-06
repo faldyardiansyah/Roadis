@@ -164,8 +164,11 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
+    showLoadingOverlay();
     await SessionStorage.clear();
     user.value = null;
+    await Future.delayed(const Duration(milliseconds: 800));
+    Get.back();
     Get.offAllNamed(AppRoutes.login);
   }
 
