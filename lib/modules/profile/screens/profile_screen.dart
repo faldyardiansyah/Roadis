@@ -113,13 +113,23 @@ class ProfileScreen extends StatelessWidget {
                                 children: [
                                   CircleAvatar(
                                     radius: 42,
-                                    backgroundColor: Colors.grey.shade200,
+                                    backgroundColor: const Color(0xFFE0F2FE),
                                     backgroundImage:
                                         (fotoUrl != null && fotoUrl.isNotEmpty)
                                         ? NetworkImage(fotoUrl)
-                                        : const AssetImage(
-                                            'assets/images/user_avatar.png',
-                                          ) as ImageProvider,
+                                        : null,
+                                    child: (fotoUrl == null || fotoUrl.isEmpty)
+                                        ? Text(
+                                            nama.trim().isNotEmpty
+                                                ? nama.trim()[0].toUpperCase()
+                                                : 'W',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 30,
+                                              fontWeight: FontWeight.w800,
+                                              color: const Color(0xFF0284C7),
+                                            ),
+                                          )
+                                        : null,
                                   ),
                                   if (c.isUploadingPhoto.value)
                                     Positioned.fill(

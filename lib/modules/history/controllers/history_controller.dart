@@ -22,27 +22,47 @@ class HistoryController extends GetxController {
 
   List<LaporanModel> get filteredLaporan {
     var result = semuaLaporan.toList();
+
     if (selectedFilter.value != 'Semua') {
-      result = result
-          .where((e) => e.status.statusLabel == selectedFilter.value)
-          .toList();
+      result = result.where((e) {
+        return e.status.statusLabel.toLowerCase().trim() ==
+            selectedFilter.value.toLowerCase().trim();
+      }).toList();
     }
 
     final query = searchQuery.value.trim().toLowerCase();
+
     if (query.isNotEmpty) {
       result = result.where((e) {
-        final nomorTiket = 'jk-${e.id}';
+        final nomorTiket = 'jk-${e.id}'.toLowerCase();
+
+        final judul = e.judul.toLowerCase();
+        final tipeKerusakan = e.tipeKerusakan.toLowerCase();
+        final wilayah = (e.wilayahNama ?? '').toLowerCase();
+        final deskripsi = (e.deskripsi ?? '').toLowerCase();
+        final status = e.status.statusLabel.toLowerCase();
+
         return nomorTiket.contains(query) ||
-            e.judul.toLowerCase().contains(query) ||
-            (e.wilayahNama ?? '').toLowerCase().contains(query);
+            judul.contains(query) ||
+            tipeKerusakan.contains(query) ||
+            wilayah.contains(query) ||
+            deskripsi.contains(query) ||
+            status.contains(query);
       }).toList();
     }
+
     return result;
   }
 
   int countFor(String filter) {
-    if (filter == 'Semua') return semuaLaporan.length;
-    return semuaLaporan.where((e) => e.status.statusLabel == filter).length;
+    if (filter == 'Semua') {
+      return semuaLaporan.length;
+    }
+
+    return semuaLaporan.where((e) {
+      return e.status.statusLabel.toLowerCase().trim() ==
+          filter.toLowerCase().trim();
+    }).length;
   }
 
   @override
@@ -54,6 +74,7 @@ class HistoryController extends GetxController {
   Future<void> fetchRiwayat() async {
     isLoading.value = true;
     errorMessage.value = null;
+
     try {
       semuaLaporan.value = await _service.getRiwayat();
     } catch (e) {
@@ -62,11 +83,12 @@ class HistoryController extends GetxController {
       isLoading.value = false;
     }
   }
-  void selectFilter(String filter) {
-      selectedFilter.value = filter;
-    }
 
-    void updateSearch(String query) {
-      searchQuery.value = query;
-    }
+  void selectFilter(String filter) {
+    selectedFilter.value = filter;
+  }
+
+  void updateSearch(String query) {
+    searchQuery.value = query;
+  }
 }

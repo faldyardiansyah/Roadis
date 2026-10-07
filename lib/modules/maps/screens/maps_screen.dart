@@ -1,3 +1,4 @@
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -6,8 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:roadis/core/laporan/models/laporan_model.dart';
 import 'package:roadis/routes/app_routes.dart';
+import 'package:roadis/utils/widgets/show_snackbar.dart';
 import '../controllers/maps_controller.dart';
-import 'map_laporan_detail_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
@@ -382,6 +384,36 @@ class _DetailCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = laporan.status.statusColor;
 
+    Future<void> _openNavigation() async {
+      final lat = laporan.latitude;
+      final lng = laporan.longitude;
+
+      final googleMapsUri = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+      );
+
+      try {
+        final opened = await launchUrl(
+          googleMapsUri,
+          mode: LaunchMode.externalApplication,
+        );
+
+        if (!opened) {
+          showAwesomeSnackbar(
+            title: 'Terjadi Kesalahan',
+            message: 'Gagal membuka Google Maps.',
+            contentType: ContentType.failure,
+          );
+        }
+      } catch (_) {
+        showAwesomeSnackbar(
+          title: 'Terjadi Kesalahan',
+          message: 'Gagal membuka Google Maps.',
+          contentType: ContentType.failure,
+        );
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -525,9 +557,7 @@ class _DetailCard extends StatelessWidget {
               Expanded(
                 flex: 1,
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: buka aplikasi navigasi (misal geo: URI atau Google Maps)
-                  },
+                  onPressed: _openNavigation,
                   icon: const Icon(
                     Icons.navigation_outlined,
                     size: 14,
