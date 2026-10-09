@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:roadis/core/laporan/models/laporan_model.dart';
+import 'package:roadis/utils/app_colors.dart';
 
 class MapLaporanDetailScreen extends StatelessWidget {
   final LaporanModel laporan;
@@ -222,6 +223,18 @@ class MapLaporanDetailScreen extends StatelessWidget {
                               ),
 
                           const SizedBox(height: 14),
+                          _buildProgressCard().
+                              animate()
+                              .fadeIn(duration: 500.ms, delay: 210.ms)
+                              .slideY(
+                                begin: 0.08,
+                                end: 0,
+                                duration: 500.ms,
+                                delay: 210.ms,
+                                curve: Curves.easeOutCubic,
+                              ),
+
+                          const SizedBox(height: 14),
 
                           _buildMapCard()
                               .animate()
@@ -360,6 +373,233 @@ class MapLaporanDetailScreen extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressCard() {
+    final status = laporan.status.statusLabel.toLowerCase();
+
+    final bool selesai = status.contains('selesai');
+    final bool diproses =
+        status.contains('proses') || status.contains('diproses');
+    final bool ditolak = status.contains('tolak');
+
+    final Color warna = selesai
+        ? AppColors.greenColor
+        : ditolak
+        ? AppColors.redColor
+        : diproses
+        ? AppColors.primaryColor
+        : AppColors.yellowColor;
+
+    final Color warnaLatar = selesai
+        ? AppColors.greenColorLight
+        : ditolak
+        ? AppColors.redColorLight
+        : diproses
+        ? AppColors.primaryColorLight
+        : AppColors.yellowColorLight;
+
+    final IconData ikon = selesai
+        ? Icons.check_circle_rounded
+        : ditolak
+        ? Icons.cancel_rounded
+        : diproses
+        ? Icons.engineering_rounded
+        : Icons.hourglass_top_rounded;
+
+    final String judul = selesai
+        ? 'Penanganan Selesai'
+        : ditolak
+        ? 'Laporan Ditolak'
+        : diproses
+        ? 'Sedang Diproses'
+        : 'Menunggu Verifikasi';
+
+    final String deskripsi = selesai
+        ? 'Admin telah menandai laporan ini selesai.'
+        : ditolak
+        ? (laporan.catatanAdmin.isNotEmpty
+              ? laporan.catatanAdmin
+              : 'Laporan ini tidak dilanjutkan ke tahap penanganan.')
+        : diproses
+        ? 'Laporan sedang ditangani oleh admin.'
+        : 'Laporan telah tercatat dan menunggu verifikasi admin.';
+
+    return _card(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _cardTitle(
+            Icons.track_changes_rounded,
+            'Status & Progres Penanganan',
+          ),
+          const SizedBox(height: 16),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: warnaLatar,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(ikon, color: warna, size: 27),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        judul,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: warna,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        deskripsi,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          height: 1.6,
+                          color: AppColors.darkTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          if (laporan.catatanAdmin.isNotEmpty && !ditolak) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Catatan Admin',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: AppColors.darkTextColor,
+              ),
+            ),
+            const SizedBox(height: 7),
+            Text(
+              laporan.catatanAdmin,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                height: 1.6,
+                color: AppColors.greyColor,
+              ),
+            ),
+          ],
+
+          if (laporan.fotoBukti.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Text(
+              selesai ? 'Foto Hasil Perbaikan' : 'Foto Bukti Penanganan',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: AppColors.darkTextColor,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                laporan.fotoBukti,
+                width: double.infinity,
+                height: 210,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+
+                  return Container(
+                    height: 210,
+                    color: AppColors.backgroundColor,
+                    alignment: Alignment.center,
+                    child: CircularProgressIndicator(
+                      value: progress.expectedTotalBytes != null
+                          ? progress.cumulativeBytesLoaded /
+                                progress.expectedTotalBytes!
+                          : null,
+                      color: AppColors.primaryColor,
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 150,
+                    width: double.infinity,
+                    color: AppColors.backgroundColor,
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.broken_image_outlined,
+                          size: 34,
+                          color: AppColors.greyColor,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Foto bukti gagal dimuat',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            color: AppColors.greyColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(13),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundColor,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.borderColor),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.photo_camera_back_outlined,
+                    color: AppColors.greyColor,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      selesai
+                          ? 'Foto hasil perbaikan belum tersedia.'
+                          : diproses
+                          ? 'Foto progres belum diunggah admin.'
+                          : ditolak
+                          ? 'Tidak ada foto penanganan.'
+                          : 'Foto progres akan muncul setelah admin mengunggahnya.',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        height: 1.5,
+                        color: AppColors.greyColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

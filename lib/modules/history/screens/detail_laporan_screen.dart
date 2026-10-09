@@ -51,17 +51,40 @@ class DetailLaporanScreen extends StatelessWidget {
             children: [
               _buildFoto(),
               const SizedBox(height: 18),
-              _buildHeader().animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.25, duration: 400.ms, delay: 100.ms),
+              _buildHeader()
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: 100.ms)
+                  .slideY(begin: 0.25, duration: 400.ms, delay: 100.ms),
               const SizedBox(height: 18),
-              _buildInfoCard().animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.25, duration: 400.ms, delay: 200.ms),
+              _buildInfoCard()
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: 200.ms)
+                  .slideY(begin: 0.25, duration: 400.ms, delay: 200.ms),
               const SizedBox(height: 18),
-              _sectionTitle('Deskripsi').animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.25, duration: 400.ms, delay: 200.ms),
+              _sectionTitle('Deskripsi')
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: 200.ms)
+                  .slideY(begin: 0.25, duration: 400.ms, delay: 200.ms),
               const SizedBox(height: 8),
-              _buildDescription().animate().fadeIn(duration: 400.ms, delay: 250.ms).slideY(begin: 0.25, duration: 400.ms, delay: 250.ms),
+              _buildDescription()
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: 250.ms)
+                  .slideY(begin: 0.25, duration: 400.ms, delay: 250.ms),
               const SizedBox(height: 18),
-              _buildPeta().animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.25, duration: 400.ms, delay: 300.ms),
+              _buildBalasanAdmin()
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: 300.ms)
+                  .slideY(begin: 0.2, duration: 400.ms, delay: 300.ms),
               const SizedBox(height: 18),
-              _buildActionButtons().animate().fadeIn(duration: 400.ms, delay: 350.ms).slideY(begin: 0.25, duration: 400.ms, delay: 350.ms),
+              _buildPeta()
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: 300.ms)
+                  .slideY(begin: 0.25, duration: 400.ms, delay: 300.ms),
+              const SizedBox(height: 18),
+              _buildActionButtons()
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: 350.ms)
+                  .slideY(begin: 0.25, duration: 400.ms, delay: 350.ms),
             ],
           ),
         ),
@@ -89,7 +112,7 @@ class DetailLaporanScreen extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          if (url == null || url.isEmpty)
+          if (url.isEmpty)
             const Icon(
               Icons.image_not_supported_outlined,
               size: 44,
@@ -262,7 +285,7 @@ class DetailLaporanScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: _cardDecoration(),
       child: Text(
-        laporan.deskripsi ?? '-',
+        laporan.deskripsi .isEmpty ? '-' : laporan.deskripsi,
         style: GoogleFonts.plusJakartaSans(
           fontSize: 13,
           height: 1.6,
@@ -272,10 +295,152 @@ class DetailLaporanScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildBalasanAdmin() {
+    final catatan = laporan.catatanAdmin.trim();
+    final foto = laporan.fotoBukti.trim();
+
+    final adaBalasan = catatan.isNotEmpty;
+    final adaFoto = foto.isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(
+                  Icons.support_agent_rounded,
+                  color: AppColors.primaryColor,
+                  size: 23,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Balasan Admin',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.darkTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Informasi tindak lanjut laporan',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        color: AppColors.greyColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                adaBalasan || adaFoto
+                    ? Icons.check_circle_rounded
+                    : Icons.schedule_rounded,
+                color: adaBalasan || adaFoto
+                    ? AppColors.greenColor
+                    : AppColors.yellowColor,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (adaBalasan) ...[
+            Text(
+              catatan,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                height: 1.7,
+                color: AppColors.darkTextColor,
+              ),
+            ),
+          ] else ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(13),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Belum ada balasan dari admin. '
+                'Silakan pantau perkembangan laporan kamu.',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  height: 1.6,
+                  color: AppColors.greyColor,
+                ),
+              ),
+            ),
+          ],
+          if (adaFoto) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Bukti Penanganan',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.darkTextColor,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Image.network(
+                foto,
+                width: double.infinity,
+                height: 210,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+
+                  return const SizedBox(
+                    height: 210,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 120,
+                    alignment: Alignment.center,
+                    color: AppColors.backgroundColor,
+                    child: const Icon(
+                      Icons.broken_image_outlined,
+                      size: 35,
+                      color: AppColors.greyColor,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildPeta() {
     final lat = laporan.latitude;
     final lng = laporan.longitude;
-    if (lat == null || lng == null || !lat.isFinite || !lng.isFinite) {
+    if (!lat.isFinite || !lng.isFinite) {
       return const SizedBox();
     }
     final point = LatLng(lat, lng);

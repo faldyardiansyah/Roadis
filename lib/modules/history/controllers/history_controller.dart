@@ -41,13 +41,17 @@ class HistoryController extends GetxController {
         final wilayah = (e.wilayahNama ?? '').toLowerCase();
         final deskripsi = (e.deskripsi ?? '').toLowerCase();
         final status = e.status.statusLabel.toLowerCase();
+        final catatanAdmin = (e.catatanAdmin ?? '').toLowerCase();
+        if (catatanAdmin.contains(query)) return true;
 
         return nomorTiket.contains(query) ||
             judul.contains(query) ||
             tipeKerusakan.contains(query) ||
             wilayah.contains(query) ||
             deskripsi.contains(query) ||
-            status.contains(query);
+            status.contains(query) ||
+            catatanAdmin.contains(query) ||
+            catatanAdmin.contains(query);
       }).toList();
     }
 

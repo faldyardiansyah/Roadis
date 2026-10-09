@@ -45,7 +45,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Pantau status perbaikan jalan Anda di sini',
+                            'Pantau status laporan jalan Anda',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: Colors.grey.shade500,
@@ -148,6 +148,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   return Row(
                     children: HistoryController.filterOptions.map((filter) {
                       final isSelected = _c.selectedFilter.value == filter;
+
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: GestureDetector(
@@ -205,7 +206,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
             Expanded(
               child: Obx(() {
                 if (_c.isLoading.value) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryColor,
+                    ),
+                  );
                 }
 
                 if (_c.errorMessage.value != null) {
@@ -213,8 +218,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        const Icon(
+                          Icons.wifi_off_rounded,
+                          size: 42,
+                          color: AppColors.lightGreyColor,
+                        ),
+                        const SizedBox(height: 12),
                         Text(
                           _c.errorMessage.value!,
+                          textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             color: Colors.redAccent,
@@ -240,11 +252,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         horizontal: 8,
                       ),
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Lottie.asset(
                             'assets/lotties/404.json',
-                            width: 300,
-                            height: 230,
+                            width: 250,
+                            height: 200,
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -252,6 +265,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: AppColors.greyColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Laporan yang kamu kirim akan muncul di sini.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: AppColors.lightGreyColor,
                             ),
                           ),
                         ],
@@ -262,6 +284,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
                 return RefreshIndicator(
                   onRefresh: _c.fetchRiwayat,
+                  color: AppColors.primaryColor,
                   child: ListView.builder(
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
                     itemCount: list.length,
@@ -282,8 +305,65 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildReportCard({required LaporanModel laporan, required int index}) {
-    final statusLower = laporan.status.toLowerCase();
-    final showQueueInfo = statusLower == 'menunggu' || statusLower == 'proses';
+    final status = laporan.status.toLowerCase().trim();
+
+    final isMenunggu =
+        status == 'menunggu' ||
+        status == 'menunggu_verifikasi' ||
+        status == 'menunggu verifikasi';
+
+    final isDiproses =
+        status == 'proses' ||
+        status == 'diproses' ||
+        status == 'sedang diproses';
+
+    final isSelesai = status == 'selesai';
+    final isDitolak = status == 'ditolak';
+
+    final statusColor = laporan.status.statusColor;
+
+    final String pesanStatus;
+    final String judulStatus;
+    final IconData ikonStatus;
+    final Color warnaInfo;
+    final Color warnaLatar;
+
+    if (isMenunggu) {
+      judulStatus = 'Menunggu Verifikasi Admin';
+      pesanStatus =
+          'Laporan berhasil dikirim dan sedang menunggu pemeriksaan admin.';
+      ikonStatus = Icons.hourglass_top_rounded;
+      warnaInfo = const Color(0xFFB45309);
+      warnaLatar = const Color(0xFFFFFBEB);
+    } else if (isDiproses) {
+      judulStatus = 'Laporan Sedang Diproses';
+      pesanStatus = 'Laporan kamu sedang ditindaklanjuti oleh dinas terkait.';
+      ikonStatus = Icons.engineering_outlined;
+      warnaInfo = const Color(0xFF1D4ED8);
+      warnaLatar = const Color(0xFFEFF6FF);
+    } else if (isSelesai) {
+      judulStatus = 'Penanganan Selesai';
+      pesanStatus = 'Laporan ini telah dinyatakan selesai oleh admin.';
+      ikonStatus = Icons.check_circle_outline_rounded;
+      warnaInfo = const Color(0xFF15803D);
+      warnaLatar = const Color(0xFFF0FDF4);
+    } else if (isDitolak) {
+      judulStatus = 'Laporan Ditolak';
+      pesanStatus = 'Buka detail laporan untuk melihat keterangan dari admin.';
+      ikonStatus = Icons.info_outline_rounded;
+      warnaInfo = const Color(0xFFB91C1C);
+      warnaLatar = const Color(0xFFFEF2F2);
+    } else {
+      judulStatus = laporan.status.statusLabel;
+      pesanStatus = 'Buka detail untuk melihat perkembangan laporan.';
+      ikonStatus = Icons.info_outline_rounded;
+      warnaInfo = AppColors.greyColor;
+      warnaLatar = const Color(0xFFF8FAFC);
+    }
+
+    // Catatan admin akan terlihat jika tersedia di model.
+    final catatanAdmin = laporan.catatanAdmin.trim();
+    final adaCatatanAdmin = catatanAdmin.isNotEmpty;
 
     return GestureDetector(
       onTap: () {
@@ -298,12 +378,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: Colors.grey.shade100),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 10,
+                      color: Colors.black.withOpacity(0.035),
+                      blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -318,13 +398,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             children: [
                               Icon(
                                 Icons.confirmation_number_outlined,
-                                size: 12,
+                                size: 13,
                                 color: Colors.grey.shade400,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 5),
                               Expanded(
                                 child: Text(
-                                  '#JK-${laporan.id}  •  ${laporan.waktuLaporan}',
+                                  '#JK-${laporan.id} • ${laporan.waktuLaporan}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.plusJakartaSans(
@@ -341,10 +421,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
-                            vertical: 5,
+                            vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: laporan.status.statusColor.withOpacity(0.1),
+                            color: statusColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -352,32 +432,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: laporan.status.statusColor,
+                              color: statusColor,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+
+                    const SizedBox(height: 14),
+
                     Text(
                       laporan.tipeKerusakan.isNotEmpty
                           ? laporan.tipeKerusakan
                           : laporan.judul,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF0F172A),
                       ),
                     ),
-                    const SizedBox(height: 6),
+
+                    const SizedBox(height: 7),
+
                     Row(
                       children: [
                         const Icon(
                           Icons.location_on_rounded,
-                          size: 14,
+                          size: 15,
                           color: Colors.pinkAccent,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 5),
                         Expanded(
                           child: Text(
                             laporan.wilayahNama ?? laporan.judul,
@@ -391,8 +477,54 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ),
                       ],
                     ),
-                    if (showQueueInfo) ...[
-                      const SizedBox(height: 14),
+
+                    const SizedBox(height: 14),
+
+                    // Informasi status laporan
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: warnaLatar,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: warnaInfo.withOpacity(0.12)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(ikonStatus, size: 19, color: warnaInfo),
+                          const SizedBox(width: 9),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  judulStatus,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: warnaInfo,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  pesanStatus,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10,
+                                    height: 1.5,
+                                    color: const Color(0xFF475569),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Indikator jika admin sudah memberi catatan
+                    if (adaCatatanAdmin) ...[
+                      const SizedBox(height: 10),
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
@@ -400,27 +532,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.06),
+                          color: const Color(0xFFF0F9FF),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: Colors.orange.withOpacity(0.15),
-                          ),
+                          border: Border.all(color: const Color(0xFFBAE6FD)),
                         ),
                         child: Row(
                           children: [
                             const Icon(
-                              Icons.access_time_rounded,
-                              size: 16,
-                              color: Colors.orange,
+                              Icons.mark_chat_unread_outlined,
+                              size: 17,
+                              color: Color(0xFF0284C7),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Menunggu perbaikan jalan oleh dinas terkait',
+                                'Ada catatan dari admin. Ketuk untuk membaca.',
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.orange.shade800,
+                                  color: const Color(0xFF0369A1),
                                 ),
                               ),
                             ),
@@ -428,6 +558,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ),
                       ),
                     ],
+
+                    const SizedBox(height: 14),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Lihat detail',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 15,
+                          color: AppColors.primaryColor,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               )

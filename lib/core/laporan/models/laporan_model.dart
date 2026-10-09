@@ -12,8 +12,10 @@ class LaporanModel {
   final String tipeKerusakan;
   final String status;
   final String waktuLaporan;
+  final String fotoBukti;
+  final String catatanAdmin;
   final String? wilayahNama;
-  final String? namaPelapor;   
+  final String? namaPelapor;
 
   LaporanModel({
     required this.id,
@@ -26,8 +28,10 @@ class LaporanModel {
     required this.tipeKerusakan,
     required this.status,
     required this.waktuLaporan,
+    required this.fotoBukti,
+    required this.catatanAdmin,
     this.wilayahNama,
-    this.namaPelapor,       
+    this.namaPelapor,
   });
 
   factory LaporanModel.fromJson(Map<String, dynamic> json) {
@@ -57,8 +61,10 @@ class LaporanModel {
       tipeKerusakan: json['tipe_kerusakan']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
       waktuLaporan: json['waktu_laporan']?.toString() ?? '',
+      fotoBukti: json['foto_bukti']?.toString() ?? '',
+      catatanAdmin: json['catatan_admin']?.toString() ?? '',
       wilayahNama: wilayahNama,
-      namaPelapor: namaPelapor,  
+      namaPelapor: namaPelapor,
     );
   }
 }
