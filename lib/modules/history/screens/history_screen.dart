@@ -370,6 +370,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         Get.to(
           () => DetailLaporanScreen(laporan: laporan),
           transition: Transition.rightToLeft,
+          duration: 300.ms,
         );
       },
       child:

@@ -9,6 +9,7 @@ import 'package:roadis/core/laporan/models/laporan_model.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/utils/widgets/show_snackbar.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import 'package:roadis/modules/chat/screens/chat_screen.dart';
 
 class DetailLaporanScreen extends StatelessWidget {
   final LaporanModel laporan;
@@ -285,7 +286,7 @@ class DetailLaporanScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: _cardDecoration(),
       child: Text(
-        laporan.deskripsi .isEmpty ? '-' : laporan.deskripsi,
+        laporan.deskripsi.isEmpty ? '-' : laporan.deskripsi,
         style: GoogleFonts.plusJakartaSans(
           fontSize: 13,
           height: 1.6,
@@ -630,7 +631,13 @@ class DetailLaporanScreen extends StatelessWidget {
           width: 52,
           height: 52,
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              Get.to(
+                () => ChatScreen(laporanId: laporan.id),
+                transition: Transition.rightToLeft,
+                duration: 300.ms,
+              );
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryColor,
               foregroundColor: AppColors.whiteColor,
