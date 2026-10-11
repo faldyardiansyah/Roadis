@@ -17,80 +17,95 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
+  late final List<Widget> _screens = [
     const HomeScreen(),
     const MapScreen(),
-    const ReportCameraScreen(),
+    ReportCameraScreen(
+      onBack: () {
+        setState(() {
+          _currentIndex = 0;
+        });
+      },
+    ),
     const HistoryScreen(),
     const ProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final bool isReportPage = _currentIndex == 2;
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: _screens[_currentIndex],
-      floatingActionButton: Transform.translate(
-        offset: const Offset(0, 14),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 54,
-              height: 54,
-              child: FloatingActionButton(
-                backgroundColor: AppColors.primaryColor,
-                elevation: 4,
-                shape: const CircleBorder(),
-                splashColor: Colors.transparent,
-                focusColor: Colors.transparent,
-                hoverColor: Colors.transparent,
-                highlightElevation: 0,
-                onPressed: () {
-                  setState(() {
-                    _currentIndex = 2;
-                  });
-                },
-                child: const Icon(
-                  Icons.camera_alt_rounded,
-                  size: 25,
-                  color: Colors.white,
+      floatingActionButton: isReportPage
+          ? null
+          : Transform.translate(
+              offset: const Offset(0, 14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 54,
+                    height: 54,
+                    child: FloatingActionButton(
+                      backgroundColor: AppColors.primaryColor,
+                      elevation: 4,
+                      shape: const CircleBorder(),
+                      splashColor: Colors.transparent,
+                      focusColor: Colors.transparent,
+                      hoverColor: Colors.transparent,
+                      highlightElevation: 0,
+                      onPressed: () {
+                        setState(() {
+                          _currentIndex = 2;
+                        });
+                      },
+                      child: const Icon(
+                        Icons.camera_alt_rounded,
+                        size: 25,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Report',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade600,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+
+      // Bottom navigation tidak tampil saat halaman kamera aktif.
+      bottomNavigationBar: isReportPage
+          ? null
+          : BottomAppBar(
+              color: Colors.white,
+              elevation: 8,
+              shape: const CircularNotchedRectangle(),
+              notchMargin: 7,
+              child: SizedBox(
+                height: 65,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(Icons.home_rounded, 'Home', 0),
+                    _buildNavItem(Icons.map_outlined, 'Maps', 1),
+                    const SizedBox(width: 55),
+                    _buildNavItem(Icons.history_rounded, 'History', 3),
+                    _buildNavItem(Icons.person_outline_rounded, 'Profil', 4),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 10),
-            Text(
-              'Report',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
-                letterSpacing: 0.2,
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        color: Colors.white,
-        elevation: 8,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 7,
-        child: SizedBox(
-          height: 65,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(Icons.home_rounded, 'Home', 0),
-              _buildNavItem(Icons.map_outlined, 'Maps', 1),
-              const SizedBox(width: 55),
-              _buildNavItem(Icons.history_rounded, 'History', 3),
-              _buildNavItem(Icons.person_outline_rounded, 'Profil', 4),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

@@ -33,31 +33,31 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // LOGO
               Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: AppColors.whiteColor,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: AppColors.primaryColor,
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 18,
-                      offset: const Offset(0, 8),
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: AppColors.whiteColor,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: AppColors.primaryColor,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.alt_route_rounded,
-                    size: 40,
-                    color: AppColors.primaryColor,
-                  ),
-                ),
-              )
+                    child: const Center(
+                      child: Icon(
+                        Icons.alt_route_rounded,
+                        size: 40,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                  )
                   .animate()
                   .fadeIn(duration: 500.ms)
                   .scale(
@@ -69,36 +69,38 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // BADGE
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      size: 18,
-                      color: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Roadis Developer',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor,
+                      borderRadius: BorderRadius.circular(30),
                     ),
-                  ],
-                ),
-              )
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Roadis Developer',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
                   .animate(delay: 200.ms)
                   .fadeIn(duration: 450.ms)
-                  .slideY(begin: -.4),
+                  .slideY(begin: -.4)
+                  .animate(onPlay: (controller) => controller.repeat())
+                  .shimmer(delay: 1100.ms, duration: 1200.ms),
 
               const SizedBox(height: 28),
 
@@ -106,10 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
               RichText(
                 text: const TextSpan(
                   text: 'Selamat datang di ',
-                  style: TextStyle(
-                    fontSize: 22,
-                    color: Colors.black87,
-                  ),
+                  style: TextStyle(fontSize: 22, color: Colors.black87),
                   children: [
                     TextSpan(
                       text: 'Roadis',
@@ -120,10 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-              )
-                  .animate(delay: 350.ms)
-                  .fadeIn()
-                  .moveY(begin: 15),
+              ).animate(delay: 350.ms).fadeIn().moveY(begin: 15),
 
               const SizedBox(height: 10),
 
@@ -135,20 +131,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: Colors.black54,
                   height: 1.5,
                 ),
-              )
-                  .animate(delay: 450.ms)
-                  .fadeIn()
-                  .moveY(begin: 12),
+              ).animate(delay: 450.ms).fadeIn().moveY(begin: 12),
 
               const SizedBox(height: 34),
 
               // EMAIL
               _buildInputField(
-                label: 'Email',
-                hintText: 'Masukkan email Anda',
-                prefixIcon: Icons.alternate_email_outlined,
-                controller: _c.loginEmailC,
-              )
+                    label: 'Email',
+                    hintText: 'Masukkan email Anda',
+                    prefixIcon: Icons.alternate_email_outlined,
+                    controller: _c.loginEmailC,
+                  )
                   .animate(delay: 600.ms)
                   .fadeIn(duration: 450.ms)
                   .slideX(begin: -.08),
@@ -157,12 +150,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // PASSWORD
               _buildInputField(
-                label: 'Kata Sandi',
-                hintText: 'Masukkan kata sandi Anda',
-                prefixIcon: Icons.lock_outline_rounded,
-                controller: _c.loginPassC,
-                isPassword: true,
-              )
+                    label: 'Kata Sandi',
+                    hintText: 'Masukkan kata sandi Anda',
+                    prefixIcon: Icons.lock_outline_rounded,
+                    controller: _c.loginPassC,
+                    isPassword: true,
+                  )
                   .animate(delay: 750.ms)
                   .fadeIn(duration: 450.ms)
                   .slideX(begin: .08),
@@ -179,10 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       setState(() => _rememberMe = v ?? false);
                     },
                   ),
-                  Text(
-                    'Ingat saya',
-                    style: GoogleFonts.plusJakartaSans(),
-                  ),
+                  Text('Ingat saya', style: GoogleFonts.plusJakartaSans()),
                   const Spacer(),
                   TextButton(
                     onPressed: () {},
@@ -195,51 +185,50 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ],
-              )
-                  .animate(delay: 900.ms)
-                  .fadeIn()
-                  .moveY(begin: 8),
+              ).animate(delay: 900.ms).fadeIn().moveY(begin: 8),
 
               const SizedBox(height: 18),
 
               // LOGIN BUTTON
               SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  onPressed: () {
-                    _c.login(_rememberMe);
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Masuk Sekarang',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryColor,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.arrow_forward_rounded,
-                        color: Colors.white,
+                      onPressed: () {
+                        _c.login(_rememberMe);
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Masuk Sekarang',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              )
+                    ),
+                  )
                   .animate(delay: 1050.ms)
                   .fadeIn()
-                  .scale(begin: const Offset(.95, .95)),
+                  .scale(begin: const Offset(.95, .95))
+                  .animate(onPlay: (controller) => controller.repeat())
+                  .shimmer(delay: 1100.ms, duration: 1200.ms),
 
               const SizedBox(height: 24),
 
@@ -259,9 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   Expanded(child: Divider(color: Colors.grey.shade300)),
                 ],
-              )
-                  .animate(delay: 1150.ms)
-                  .fadeIn(),
+              ).animate(delay: 1150.ms).fadeIn(),
 
               const SizedBox(height: 22),
 
@@ -297,10 +284,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
-              )
-                  .animate(delay: 1250.ms)
-                  .fadeIn()
-                  .moveY(begin: 12),
+              ).animate(delay: 1250.ms).fadeIn().moveY(begin: 12),
 
               const SizedBox(height: 26),
 
@@ -309,9 +293,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Text(
                     'Belum punya akun? ',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.black54,
-                    ),
+                    style: GoogleFonts.plusJakartaSans(color: Colors.black54),
                   ),
                   GestureDetector(
                     onTap: () => Get.toNamed(AppRoutes.register),
@@ -324,10 +306,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ],
-              )
-                  .animate(delay: 1400.ms)
-                  .fadeIn()
-                  .moveY(begin: 10),
+              ).animate(delay: 1400.ms).fadeIn().moveY(begin: 10),
             ],
           ),
         ),
@@ -365,10 +344,7 @@ class _LoginScreenState extends State<LoginScreen> {
             hintStyle: TextStyle(color: Colors.grey.shade400),
             filled: true,
             fillColor: Colors.grey.shade50,
-            prefixIcon: Icon(
-              prefixIcon,
-              color: Colors.grey.shade500,
-            ),
+            prefixIcon: Icon(prefixIcon, color: Colors.grey.shade500),
             suffixIcon: isPassword
                 ? IconButton(
                     onPressed: () {

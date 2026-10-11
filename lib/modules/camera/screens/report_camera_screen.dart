@@ -20,7 +20,9 @@ import './report_form_screen.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class ReportCameraScreen extends StatefulWidget {
-  const ReportCameraScreen({super.key});
+  final VoidCallback? onBack;
+
+  const ReportCameraScreen({super.key, this.onBack});
 
   @override
   State<ReportCameraScreen> createState() => _ReportCameraScreenState();
@@ -420,7 +422,13 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Get.back(),
+                    onTap: () {
+                      if (widget.onBack != null) {
+                        widget.onBack!();
+                      } else {
+                        Get.back();
+                      }
+                    },
                     child: Container(
                       width: 44,
                       height: 44,

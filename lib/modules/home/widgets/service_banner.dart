@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:roadis/routes/app_routes.dart';
@@ -47,7 +48,6 @@ class ServiceBanner extends StatelessWidget {
                 ),
               ),
             ),
-
             Positioned(
               right: 35,
               bottom: -65,
@@ -60,7 +60,6 @@ class ServiceBanner extends StatelessWidget {
                 ),
               ),
             ),
-
             Positioned(
               right: 20,
               top: 65,
@@ -70,10 +69,10 @@ class ServiceBanner extends StatelessWidget {
                 color: Colors.white.withOpacity(0.06),
               ),
             ),
-
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // BADGE
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -89,10 +88,10 @@ class ServiceBanner extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.groups_rounded,
                         size: 14,
-                        color: TextColors.whiteTextColor,
+                        color: Colors.white,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -100,7 +99,7 @@ class ServiceBanner extends StatelessWidget {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: TextColors.whiteTextColor,
+                          color: Colors.white,
                           letterSpacing: 0.3,
                         ),
                       ),
@@ -110,15 +109,16 @@ class ServiceBanner extends StatelessWidget {
 
                 const SizedBox(height: 14),
 
+                // JUDUL
                 SizedBox(
                   width: MediaQuery.of(context).size.width * 0.72,
                   child: Text(
                     'Laporkan Jalan Rusak\ndi Sekitarmu',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 22,
+                      fontSize: 21,
                       height: 1.25,
                       fontWeight: FontWeight.w800,
-                      color: TextColors.whiteTextColor,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -139,7 +139,6 @@ class ServiceBanner extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 16),
-
                 ElevatedButton(
                   onPressed: () {
                     Get.toNamed(AppRoutes.reportCamera);
@@ -166,7 +165,7 @@ class ServiceBanner extends StatelessWidget {
                           color: AppColors.primaryColor.withOpacity(0.10),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.add_rounded,
                           size: 18,
                           color: AppColors.primaryColor,
@@ -182,13 +181,19 @@ class ServiceBanner extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 5),
-                      Icon(
+                      const Icon(
                         Icons.arrow_forward_rounded,
                         size: 17,
                         color: AppColors.primaryColor,
                       ),
                     ],
                   ),
+                )
+                .animate(onPlay: (controller) => controller.repeat(reverse: false))
+                .shimmer(
+                  delay: 2000.ms,     
+                  duration: 1200.ms,  
+                  color: AppColors.primaryColor.withOpacity(0.1), 
                 ),
               ],
             ),
