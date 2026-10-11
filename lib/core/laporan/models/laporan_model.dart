@@ -57,7 +57,7 @@ class LaporanModel {
       deskripsi: json['deskripsi']?.toString() ?? '',
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
       longitude: (json['longitude'] as num?)?.toDouble() ?? 0,
-      image: json['image']?.toString() ?? '',
+      image: (json['image'] ?? json['image_url'])?.toString() ?? '',
       tipeKerusakan: json['tipe_kerusakan']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
       waktuLaporan: json['waktu_laporan']?.toString() ?? '',
