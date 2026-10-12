@@ -312,6 +312,22 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
                 const SizedBox(height: 12),
 
+                // INFO KEWENANGAN JALAN
+                _buildKewenanganCard()
+                    .animate()
+                    .fadeIn(delay: 130.ms, duration: 450.ms)
+                    .slideX(begin: 0.06, end: 0),
+
+                const SizedBox(height: 12),
+
+                // WAWASAN JALAN
+                _buildWawasanCard()
+                    .animate()
+                    .fadeIn(delay: 160.ms, duration: 450.ms)
+                    .slideX(begin: 0.06, end: 0),
+
+                const SizedBox(height: 12),
+
                 // JAM
                 _buildTimeCard()
                     .animate()
@@ -519,6 +535,260 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+
+Widget _buildKewenanganCard() {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: AppColors.whiteColor,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: AppColors.borderColor),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.alt_route_rounded,
+                color: AppColors.primaryColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Informasi Jalan',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.darkTextColor,
+                    ),
+                  ),
+                  Text(
+                    'Informasi lokasi dan penanganan jalan',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: AppColors.greyColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.location_on_outlined,
+                    color: AppColors.primaryColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Wilayah Lokasi',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppColors.greyColor,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Jalan dapat melintasi wilayah desa, '
+                'meskipun kewenangannya berada pada pemerintah '
+                'kabupaten, provinsi, atau pusat.',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  height: 1.6,
+                  color: AppColors.darkTextColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.info_outline_rounded,
+                color: AppColors.primaryColor,
+                size: 20,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'Kamu cukup melaporkan lokasi kerusakan. '
+                  'ROADIS membantu menyalurkan laporan kepada '
+                  'pihak yang sesuai berdasarkan data jalan '
+                  'yang tersedia.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    height: 1.6,
+                    color: AppColors.darkTextColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+  Widget _buildWawasanCard() {
+    final String jenis = (_selectedType ?? '').toLowerCase();
+
+    String judul = 'Kenali Kerusakan Jalan';
+    String deskripsi =
+        'Pilih jenis kerusakan untuk melihat informasi dan '
+        'hal yang perlu diperhatikan.';
+
+    if (jenis.contains('lubang')) {
+      judul = 'Wawasan: Lubang Jalan';
+      deskripsi =
+          'Lubang dapat membuat pengendara kehilangan keseimbangan '
+          'atau merusak kendaraan. Berhati-hatilah, terutama saat '
+          'hujan ketika lubang sulit terlihat.';
+    } else if (jenis.contains('buaya')) {
+      judul = 'Wawasan: Retak Buaya';
+      deskripsi =
+          'Retakan yang saling terhubung menyerupai sisik buaya. '
+          'Kerusakan ini dapat berkaitan dengan melemahnya lapisan '
+          'perkerasan atau dukungan di bawahnya.';
+    } else if (jenis.contains('tepi')) {
+      judul = 'Wawasan: Retak Tepi';
+      deskripsi =
+          'Retak yang muncul di dekat tepi jalan dapat berkaitan '
+          'dengan kondisi bahu jalan atau dukungan tepi perkerasan.';
+    } else if (jenis.contains('memanjang')) {
+      judul = 'Wawasan: Retak Memanjang';
+      deskripsi =
+          'Retakan memanjang mengikuti arah jalan. Penyebabnya '
+          'beragam, sehingga perlu pemeriksaan lebih lanjut '
+          'untuk menentukan penanganan yang tepat.';
+    } else if (jenis.contains('melintang')) {
+      judul = 'Wawasan: Retak Melintang';
+      deskripsi =
+          'Retakan melintang memotong arah jalan. Perubahan suhu, '
+          'sambungan perkerasan, dan kondisi material dapat '
+          'berkontribusi terhadap kerusakan ini.';
+    } else if (jenis.contains('tambalan')) {
+      judul = 'Wawasan: Tambalan Jalan';
+      deskripsi =
+          'Tambalan menunjukkan area yang pernah diperbaiki. '
+          'Periksa apakah tambalan kembali retak, berlubang, '
+          'atau memiliki permukaan yang tidak rata.';
+    } else if (jenis.contains('bergelombang')) {
+      judul = 'Wawasan: Jalan Bergelombang';
+      deskripsi =
+          'Permukaan yang tidak rata dapat mengurangi kenyamanan '
+          'dan kestabilan kendaraan. Kurangi kecepatan dan '
+          'pastikan kondisi jalan aman saat melintas.';
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.primaryColor.withOpacity(0.18)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.whiteColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.lightbulb_outline_rounded,
+              color: AppColors.primaryColor,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Wawasan Jalan',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  judul,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.darkTextColor,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  deskripsi,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    height: 1.6,
+                    color: AppColors.darkTextColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Informasi ini bersifat edukatif. '
+                  'Penentuan penyebab dan perbaikan tetap '
+                  'memerlukan pemeriksaan lapangan.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    height: 1.5,
+                    color: AppColors.greyColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
