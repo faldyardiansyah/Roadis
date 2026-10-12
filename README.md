@@ -36,7 +36,7 @@ Model dirancang untuk mengenali tujuh kategori kerusakan jalan:
 | 3 | Longitudinal Cracking | Retak Memanjang |
 | 4 | Patching | Tambalan |
 | 5 | Pothole | Lubang |
-| 6 | Rutting | Alur |
+| 6 | Rutting | cekungan Jalan |
 | 7 | Transverse Cracking | Retak Melintang |
 
 Hasil deteksi dapat digunakan sebagai referensi untuk membantu pengguna menyusun laporan kerusakan jalan. Hasil AI tetap perlu diperiksa oleh pengguna sebelum laporan dikirimkan.
@@ -102,20 +102,6 @@ Tambahkan screenshot aplikasi pada folder `screenshots/` agar pengunjung reposit
 |---|---|---|
 | Tambahkan screenshot Form | Tambahkan screenshot History | Tambahkan screenshot Profile |
 
-Contoh struktur file screenshot:
-
-```text
-screenshots/
-├── home.png
-├── maps.png
-├── detection.png
-├── report_form.png
-├── history.png
-└── profile.png
-```
-
-Setelah screenshot tersedia, kamu bisa mengganti keterangan di atas dengan gambar menggunakan sintaks Markdown, misalnya `![Home](screenshots/home.png)`.
-
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -131,11 +117,9 @@ Pastikan perangkat pengembangan sudah memiliki:
 ### 1. Clone Repository
 
 ```bash
-git clone <URL_REPOSITORY_MOBILE>
+git clone https://github.com/faldyardiansyah/Roadis.git
 cd roadis
 ```
-
-Ganti `<URL_REPOSITORY_MOBILE>` dengan URL repository GitHub ROADIS Mobile milikmu.
 
 ### 2. Install Dependencies
 
