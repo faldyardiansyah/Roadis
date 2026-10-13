@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:roadis/utils/app_colors.dart';
 
 import '../controllers/chat_controller.dart';
@@ -17,15 +18,12 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-
   late final String _tag;
   late final ChatController _controller;
 
   // Identitas ini hanya untuk membedakan bubble di tampilan.
   // Identitas akun sebenarnya tetap divalidasi oleh backend.
   final ChatUser _warga = ChatUser(id: 'warga', firstName: 'Kamu');
-
-  final ChatUser _admin = ChatUser(id: 'admin', firstName: 'Admin ROADIS');
 
   @override
   void initState() {
@@ -49,11 +47,60 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   DateTime _parseDate(String? value) {
-    if (value == null || value.isEmpty) {
-      return DateTime.now();
+    if (value == null || value.trim().isEmpty) {
+      return DateTime(1970);
     }
 
-    return DateTime.tryParse(value)?.toLocal() ?? DateTime.now();
+    final text = value.trim();
+
+    // Format standar dari database/API
+    final parsed = DateTime.tryParse(text);
+    if (parsed != null) {
+      return parsed.toLocal();
+    }
+
+    final match = RegExp(
+      r'^\w+,\s*(\d{1,2})\s+(\w+)\s+(\d{4})\s+jam\s+(\d{2}):(\d{2})\s+WIB$',
+      caseSensitive: false,
+    ).firstMatch(text);
+
+    if (match != null) {
+      const bulan = {
+        'Januari': 1,
+        'Februari': 2,
+        'Maret': 3,
+        'April': 4,
+        'Mei': 5,
+        'Juni': 6,
+        'Juli': 7,
+        'Agustus': 8,
+        'September': 9,
+        'Oktober': 10,
+        'November': 11,
+        'Desember': 12,
+      };
+
+      final namaBulan = match.group(2)!.toLowerCase();
+      final nomorBulan = bulan.entries
+          .firstWhere(
+            (entry) => entry.key.toLowerCase() == namaBulan,
+            orElse: () => const MapEntry('', 0),
+          )
+          .value;
+
+      if (nomorBulan != 0) {
+        return DateTime(
+          int.parse(match.group(3)!),
+          nomorBulan,
+          int.parse(match.group(1)!),
+          int.parse(match.group(4)!),
+          int.parse(match.group(5)!),
+        );
+      }
+    }
+
+    debugPrint('GAGAL PARSE WAKTU CHAT: $value');
+    return DateTime(1970);
   }
 
   // Mengubah data dari API menjadi pesan milik DashChat.
@@ -111,7 +158,9 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Obx(() {
               if (_controller.isLoading.value) {
                 return const Center(
-                  child: CircularProgressIndicator(color: AppColors.primaryColor),
+                  child: CircularProgressIndicator(
+                    color: AppColors.primaryColor,
+                  ),
                 );
               }
 
@@ -149,6 +198,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 currentUser: _warga,
                 messages: _convertMessages(_controller.messages.toList()),
                 onSend: _kirimPesan,
+
                 messageOptions: MessageOptions(
                   currentUserContainerColor: AppColors.primaryColor,
                   containerColor: Colors.white,
@@ -158,6 +208,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   messagePadding: const EdgeInsets.all(12),
                   borderRadius: 18,
                 ),
+
                 inputOptions: InputOptions(
                   inputDecoration: InputDecoration(
                     hintText: 'Tulis pesan di sini...',
@@ -267,7 +318,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      'Laporan #${widget.laporanId}',
+                      'Laporan #JK-${widget.laporanId}',
                       style: const TextStyle(
                         color: Color(0xFFDCEFFE),
                         fontSize: 12,
