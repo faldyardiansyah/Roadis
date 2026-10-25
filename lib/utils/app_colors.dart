@@ -30,6 +30,7 @@ class AppColors {
   static const Color borderColor = Color(0xFFE5E7EB);
   static const Color dividerColor = Color(0xFFE2E8F0);
 
+
   // Transparent / soft colors
   static final Color primaryColorLight =
       primaryColor.withOpacity(0.2);

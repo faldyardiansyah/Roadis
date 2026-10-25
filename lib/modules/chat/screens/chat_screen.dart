@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:roadis/utils/app_colors.dart';
 
 import '../controllers/chat_controller.dart';
