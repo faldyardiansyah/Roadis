@@ -14,6 +14,7 @@ import 'package:roadis/core/laporan/models/wilayah_model.dart';
 import 'package:roadis/modules/camera/controllers/report_form_controller.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/utils/widgets/show_snackbar.dart';
+import '../presentation/report_succes_screen.dart';
 
 class ReportFormScreen extends StatefulWidget {
   final XFile image;
@@ -371,8 +372,8 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       final error = c.roadCheckError.value;
       final detected = c.roadDetected.value;
 
-      final jenisJalan = c.jenisJalanOSM.value ?? '';
-      final kewenangan = c.kewenanganOSM.value ?? '';
+      final jenisJalan = (c.jenisJalanOSM.value ?? '').toLowerCase().trim();
+      final kewenangan = (c.kewenanganOSM.value ?? '').toLowerCase().trim();
       final namaJalan = c.namaJalanOSM.value;
 
       String labelJenisJalan(String jenis) {
@@ -409,31 +410,64 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         }
       }
 
-      String labelPenanggungJawab(String nilai) {
-        switch (nilai.toLowerCase().trim()) {
+      String labelPenanggungJawab(String jenis, String nilai) {
+        // Gunakan data kewenangan dari backend jika tersedia.
+        switch (nilai) {
           case 'pemdes':
           case 'desa':
           case 'pemerintah desa':
           case 'pemerintah desa (pemdes)':
             return 'Pemerintah Desa (Pemdes)';
+
           case 'kabupaten':
           case 'pemerintah kabupaten':
           case 'pemerintah kabupaten / dinas pu':
             return 'Pemerintah Kabupaten';
+
           case 'provinsi':
           case 'pemerintah provinsi':
             return 'Pemerintah Provinsi';
+
           case 'nasional':
           case 'pemerintah pusat':
           case 'pemerintah pusat / kementerian pu':
           case 'perkiraan pemerintah pusat (nasional)':
-            return 'Perkiraan Pemerintah Pusat (Nasional)';
+            return 'Pemerintah Pusat (Nasional)';
+        }
+
+        // Jika backend belum menentukan kewenangan,
+        // tampilkan perkiraan berdasarkan jenis jalan OSM.
+
+        switch (jenis) {
+          case 'residential':
+          case 'living_street':
+          case 'unclassified':
+          case 'service':
+          case 'track':
+            return 'Pemerintah Desa (Pemdes)';
+
+          case 'tertiary':
+          case 'tertiary_link':
+          case 'secondary':
+          case 'secondary_link':
+            return 'Pemerintah Kabupaten';
+
+          case 'primary':
+          case 'primary_link':
+            return 'Pemerintah Kabupaten';
+
+          case 'trunk':
+          case 'trunk_link':
+          case 'motorway':
+          case 'motorway_link':
+            return 'Pemerintah Pusat (Nasional)';
+
           default:
             return 'Belum dapat dipastikan';
         }
       }
 
-      final penanggungJawab = labelPenanggungJawab(kewenangan);
+      final penanggungJawab = labelPenanggungJawab(jenisJalan, kewenangan);
 
       return _card(
         child: Column(
@@ -470,7 +504,6 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                     'Geser pin lebih dekat ke badan jalan, lalu periksa ulang.',
               )
             else if (detected == true) ...[
-              // Status pemeriksaan jalan
               _notice(
                 icon: Icons.check_circle_outline,
                 color: const Color(0xFF16A34A),
@@ -482,7 +515,6 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
               const SizedBox(height: 16),
 
-              // Jenis jalan
               _roadInfoRow(
                 Icons.route_outlined,
                 'Jenis jalan',
@@ -491,16 +523,14 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
               const Divider(height: 24, color: _border),
 
-              // Perkiraan penanggung jawab
               _roadInfoRow(
                 Icons.account_balance_outlined,
-                'Perkiraan penanggung jawab',
+                'Pemilik jalan',
                 penanggungJawab,
               ),
 
               const SizedBox(height: 14),
 
-              // Catatan untuk warga
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
@@ -530,10 +560,10 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Instansi penanggung jawab ditampilkan berdasarkan '
-                      'perkiraan dari jenis jalan OpenStreetMap. '
-                      'Jika belum terverifikasi, penanggung jawab masih '
-                      'perlu diperiksa oleh admin.',
+                      'Pemilik jalan ditampilkan sebagai perkiraan '
+                      'berdasarkan jenis jalan OpenStreetMap. '
+                      'Penanggung jawab resmi tetap perlu diverifikasi '
+                      'oleh admin.',
                       style: _bodyStyle,
                     ),
                   ],
@@ -953,28 +983,19 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
   Future<void> _submitReport() async {
     FocusScope.of(context).unfocus();
 
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     try {
       final reportData = await _controller.submitReport();
 
       if (!mounted || reportData == null) return;
-
-      Get.back(result: reportData);
-
-      showAwesomeSnackbar(
-        title: 'Berhasil',
-        message: 'Data laporan berhasil disiapkan.',
-        contentType: ContentType.success,
-      );
+      Get.off(() => ReportSuccessScreen(report: reportData));
     } catch (e) {
       if (!mounted) return;
 
       showAwesomeSnackbar(
-        title: 'Gagal',
-        message: 'Terjadi kesalahan saat menyiapkan laporan.',
+        title: 'Gagal Mengirim Laporan',
+        message: e.toString().replaceFirst('Exception: ', ''),
         contentType: ContentType.failure,
       );
     }

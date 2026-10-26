@@ -258,6 +258,8 @@ class DetailLaporanScreen extends StatelessWidget {
   }
 
   Widget _buildInfoCard() {
+    final kewenangan = laporan.kewenanganJalan?.trim();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -273,7 +275,17 @@ class DetailLaporanScreen extends StatelessWidget {
           _infoRow(
             Icons.location_city_outlined,
             'Wilayah',
-            laporan.wilayahNama ?? '-',
+            laporan.wilayahNama?.trim().isNotEmpty == true
+                ? laporan.wilayahNama!.trim()
+                : '-',
+          ),
+          const Divider(height: 20),
+          _infoRow(
+            Icons.account_balance_outlined,
+            'Kewenangan Jalan',
+            kewenangan != null && kewenangan.isNotEmpty
+                ? kewenangan
+                : 'Belum diketahui',
           ),
         ],
       ),

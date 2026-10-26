@@ -364,52 +364,132 @@ class ReportFormController extends GetxController {
     }
   }
 
-  // kirim laporan (sementara masih simulasi, belum upload ke api)
+  // Kirim laporan ke backend Go dan simpan melalui API.
   Future<Map<String, dynamic>?> submitReport() async {
-    if (selectedWilayahId.value == null) {
-      return null;
+    if (isSubmitting.value) return null;
+
+    // Validasi sesi login.
+    final token = SessionStorage.getToken()?.trim();
+
+    if (token == null || token.isEmpty) {
+      throw Exception('Sesi login habis. Silakan login kembali.');
+    }
+
+    // Validasi data laporan.
+    final wilayahId = selectedWilayahId.value;
+
+    if (wilayahId == null) {
+      throw Exception('Silakan pilih wilayah laporan.');
+    }
+
+    final judul = judulController.text.trim();
+    final deskripsi = deskripsiController.text.trim();
+    final tipe = selectedType.value?.trim();
+
+    if (judul.isEmpty) {
+      throw Exception('Judul laporan wajib diisi.');
+    }
+
+    if (deskripsi.isEmpty) {
+      throw Exception('Deskripsi laporan wajib diisi.');
+    }
+
+    if (tipe == null || tipe.isEmpty) {
+      throw Exception('Silakan pilih jenis kerusakan.');
+    }
+
+    if (await image.length() == 0) {
+      throw Exception('Foto laporan kosong. Silakan foto ulang.');
     }
 
     isSubmitting.value = true;
 
     try {
+      // Gunakan titik pin yang dipilih pengguna.
       final point = pickedPoint.value ?? gpsPoint;
 
-      final reportData = {
-        'judul': judulController.text.trim(),
-        'deskripsi': deskripsiController.text.trim(),
-        'tipe_kerusakan': selectedType.value,
-        'wilayah_id': selectedWilayahId.value,
-        'latitude': point.latitude,
-        'longitude': point.longitude,
-        'gps_latitude': position.latitude,
-        'gps_longitude': position.longitude,
-        'lokasi_digeser': distance.distance(gpsPoint, point) > 0.5,
-        'waktu_laporan': waktu.toIso8601String(),
-        'image_path': image.path,
-        'ai_class': detection?.className,
-        'ai_confidence': detection?.confidence,
-      };
+      // Pastikan ApiConfig.baseUrl sudah mencakup /api.
+      final uri = Uri.parse('${ApiConfig.baseUrl}/warga/laporan');
 
-      debugPrint('DATA LAPORAN: $reportData');
+      final request = http.MultipartRequest('POST', uri);
 
-      // TODO: hubungkan ke api upload laporan supaya tersimpan ke database
-      await Future.delayed(const Duration(milliseconds: 500));
+      request.headers.addAll({
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      });
 
-      return reportData;
+      request.fields.addAll({
+        'judul': judul,
+        'deskripsi': deskripsi,
+        'tipe_kerusakan': tipe,
+        'wilayah_id': wilayahId.toString(),
+        'latitude': point.latitude.toString(),
+        'longitude': point.longitude.toString(),
+      });
+
+      // Backend Go membaca foto dengan c.FormFile("foto").
+      request.files.add(await http.MultipartFile.fromPath('foto', image.path));
+
+      debugPrint('KIRIM LAPORAN: $uri');
+
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 60),
+      );
+
+      final response = await http.Response.fromStream(streamedResponse);
+
+      debugPrint('STATUS LAPORAN: ${response.statusCode}');
+      debugPrint('RESPONS LAPORAN: ${response.body}');
+
+      dynamic body;
+
+      try {
+        body = jsonDecode(response.body);
+      } catch (_) {
+        throw Exception(
+          'Respons server tidak valid. HTTP ${response.statusCode}.',
+        );
+      }
+
+      // Jangan menganggap request berhasil jika HTTP gagal.
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final message = body is Map ? body['message']?.toString() : null;
+
+        throw Exception(message ?? 'Gagal mengirim laporan ke server.');
+      }
+
+      // Backend harus mengembalikan status success.
+      if (body is! Map || body['status'] != 'success') {
+        final message = body is Map ? body['message']?.toString() : null;
+
+        throw Exception(
+          message ?? 'Server belum mengonfirmasi laporan berhasil.',
+        );
+      }
+
+      final data = body['data'];
+
+      if (data is! Map) {
+        throw Exception('Data laporan tidak ditemukan dalam respons server.');
+      }
+
+      // Kembalikan data asli dari server untuk halaman sukses.
+      return Map<String, dynamic>.from(data);
+    } on TimeoutException {
+      throw Exception(
+        'Waktu pengiriman habis. Periksa riwayat laporan '
+        'sebelum mencoba mengirim ulang.',
+      );
+    } on SocketException {
+      throw Exception(
+        'Tidak dapat terhubung ke server. Periksa jaringan '
+        'dan alamat IP backend.',
+      );
     } catch (e) {
-      debugPrint('Gagal kirim laporan: $e');
+      debugPrint('GAGAL KIRIM LAPORAN: $e');
       rethrow;
     } finally {
       isSubmitting.value = false;
     }
-  }
-
-  @override
-  void onClose() {
-    judulController.dispose();
-    deskripsiController.dispose();
-    mapController.dispose();
-    super.onClose();
   }
 }
