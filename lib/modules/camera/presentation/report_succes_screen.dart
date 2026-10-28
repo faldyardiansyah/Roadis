@@ -47,7 +47,7 @@ class ReportSuccessScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _detail('ID Laporan', id),
+                      _detail('ID Laporan', 'JK-$id'),
                       const SizedBox(height: 12),
                       _detail('Judul', judul),
                       const SizedBox(height: 12),

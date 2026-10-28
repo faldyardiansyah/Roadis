@@ -257,40 +257,124 @@ class DetailLaporanScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoCard() {
-    final kewenangan = laporan.kewenanganJalan?.trim();
+  
+Widget _buildInfoCard() {
+  final kewenangan = laporan.kewenanganJalan?.trim() ?? '';
+  final belumDiketahui = kewenangan.isEmpty ||
+      kewenangan.toLowerCase() == 'belum_pasti' ||
+      kewenangan.toLowerCase() == 'belum diketahui';
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: _cardDecoration(),
-      child: Column(
-        children: [
-          _infoRow(
-            Icons.warning_amber_rounded,
-            'Jenis Kerusakan',
-            laporan.tipeKerusakan,
+  final namaKewenangan = belumDiketahui
+      ? 'Belum terverifikasi'
+      : kewenangan
+          .replaceAll('_', ' ')
+          .split(' ')
+          .map(
+            (kata) => kata.isEmpty
+                ? kata
+                : '${kata[0].toUpperCase()}${kata.substring(1).toLowerCase()}',
+          )
+          .join(' ');
+
+  final keteranganKewenangan = belumDiketahui
+      ? 'Kewenangan ruas jalan ini masih perlu diperiksa.'
+      : 'Kewenangan jalan berdasarkan data laporan.';
+
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: _cardDecoration(),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _infoRow(
+          Icons.warning_amber_rounded,
+          'Jenis Kerusakan',
+          laporan.tipeKerusakan,
+        ),
+        const Divider(height: 24),
+        _infoRow(
+          Icons.location_city_outlined,
+          'Wilayah',
+          laporan.wilayahNama?.trim().isNotEmpty == true
+              ? laporan.wilayahNama!.trim()
+              : '-',
+        ),
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: belumDiketahui
+                ? const Color(0xFFFFF8E8)
+                : const Color(0xFFF1F7FF),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: belumDiketahui
+                  ? const Color(0xFFF0D9A7)
+                  : const Color(0xFFD9E8FA),
+            ),
           ),
-          const Divider(height: 20),
-          _infoRow(
-            Icons.location_city_outlined,
-            'Wilayah',
-            laporan.wilayahNama?.trim().isNotEmpty == true
-                ? laporan.wilayahNama!.trim()
-                : '-',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.account_balance_outlined,
+                    size: 19,
+                    color: belumDiketahui
+                        ? const Color(0xFF946200)
+                        : AppColors.primaryColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'KEWENANGAN JALAN',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.7,
+                        color: AppColors.greyColor,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    belumDiketahui
+                        ? Icons.info_outline_rounded
+                        : Icons.check_circle_outline_rounded,
+                    size: 18,
+                    color: belumDiketahui
+                        ? const Color(0xFF946200)
+                        : AppColors.primaryColor,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                namaKewenangan,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.darkTextColor,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                keteranganKewenangan,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  height: 1.5,
+                  color: AppColors.greyColor,
+                ),
+              ),
+            ],
           ),
-          const Divider(height: 20),
-          _infoRow(
-            Icons.account_balance_outlined,
-            'Kewenangan Jalan',
-            kewenangan != null && kewenangan.isNotEmpty
-                ? kewenangan
-                : 'Belum diketahui',
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildDescription() {
     return Container(
