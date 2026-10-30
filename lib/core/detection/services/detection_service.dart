@@ -6,9 +6,9 @@ import '../models/detection_result.dart';
 
 class DetectionService {
   static const int inputSize = 800; // ini sesuai sama di trainignya
-  static const double confThreshold = 0.7; // batas minimal yakin AI
+  static const double confThreshold = 0.45; // batas minimal yakin AI
   static const double iouThreshold = 0.45;
-  static const double minBoxRatio = 0.01; // kotak < 1% gambar dibuang
+  static const double minBoxRatio =  0.002; // kotak < 1% gambar dibuang
 
   Interpreter? _interpreter;
 

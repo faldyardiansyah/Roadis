@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'package:roadis/utils/app_colors.dart';
 
 class LaporanModel {
@@ -16,6 +16,8 @@ class LaporanModel {
   final String catatanAdmin;
   final String? wilayahNama;
   final String? namaPelapor;
+  final String? jenisJalan;
+  final String? kewenanganJalan;
 
   LaporanModel({
     required this.id,
@@ -32,39 +34,64 @@ class LaporanModel {
     required this.catatanAdmin,
     this.wilayahNama,
     this.namaPelapor,
+    this.jenisJalan,
+    this.kewenanganJalan,
   });
 
   factory LaporanModel.fromJson(Map<String, dynamic> json) {
     String? wilayahNama;
     final wilayah = json['wilayah'];
-    if (wilayah is Map<String, dynamic>) {
+
+    if (wilayah is Map) {
       final nama = wilayah['nama'] ?? wilayah['name'];
-      if (nama != null) wilayahNama = nama.toString();
+      if (nama != null) {
+        wilayahNama = nama.toString();
+      }
     }
 
-    // buat ambil nama pelapor
+    // Fallback jika backend mengirim nama wilayah secara langsung.
+    wilayahNama ??= json['wilayah_nama']?.toString();
+
     String? namaPelapor;
     final user = json['user'];
-    if (user is Map<String, dynamic>) {
+
+    if (user is Map) {
       final nama = user['name'] ?? user['nama'];
-      if (nama != null) namaPelapor = nama.toString();
+      if (nama != null) {
+        namaPelapor = nama.toString();
+      }
     }
+
+    final jenisJalan =
+        (json['jenis_jalan'] ?? json['road_type'] ?? json['jenis_jalan_osm'])
+            ?.toString();
+
+    final kewenanganJalan =
+        (json['kewenangan_jalan'] ??
+                json['kewenangan'] ??
+                json['penanggung_jawab'])
+            ?.toString();
 
     return LaporanModel(
       id: (json['id'] as num?)?.toInt() ?? 0,
       userId: (json['user_id'] as num?)?.toInt() ?? 0,
       judul: json['judul']?.toString() ?? '',
       deskripsi: json['deskripsi']?.toString() ?? '',
-      latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
-      longitude: (json['longitude'] as num?)?.toDouble() ?? 0,
-      image: (json['image'] ?? json['image_url'])?.toString() ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      image: (json['image_url'] ?? json['image'])?.toString() ?? '',
       tipeKerusakan: json['tipe_kerusakan']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
-      waktuLaporan: json['waktu_laporan']?.toString() ?? '',
+      waktuLaporan:
+          json['created_at']?.toString() ??
+          json['waktu_laporan']?.toString() ??
+          '',
       fotoBukti: json['foto_bukti']?.toString() ?? '',
       catatanAdmin: json['catatan_admin']?.toString() ?? '',
       wilayahNama: wilayahNama,
       namaPelapor: namaPelapor,
+      jenisJalan: jenisJalan,
+      kewenanganJalan: kewenanganJalan,
     );
   }
 }
@@ -75,6 +102,7 @@ extension LaporanStatusX on String {
       case 'menunggu':
         return 'Menunggu';
       case 'proses':
+      case 'diproses':
         return 'Diproses';
       case 'selesai':
         return 'Selesai';
@@ -89,6 +117,7 @@ extension LaporanStatusX on String {
     switch (toLowerCase()) {
       case 'menunggu':
         return AppColors.greyColor;
+      case 'proses':
       case 'diproses':
         return AppColors.yellowColor;
       case 'selesai':
