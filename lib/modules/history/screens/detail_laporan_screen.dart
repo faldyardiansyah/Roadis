@@ -729,7 +729,11 @@ Widget _buildInfoCard() {
           child: ElevatedButton(
             onPressed: () {
               Get.to(
-                () => ChatScreen(laporanId: laporan.id),
+                () => ChatScreen(
+                  laporanId: laporan.id,
+                  jenisJalan: laporan.jenisJalan,
+                  kewenanganJalan: laporan.kewenanganJalan,
+                ),
                 transition: Transition.rightToLeft,
                 duration: 300.ms,
               );

@@ -283,7 +283,7 @@ class ReportFormController extends GetxController {
           ? jarak.toDouble()
           : double.tryParse(jarak?.toString() ?? '');
 
-      // Jenis highway OSM bukan bukti kewenangan resmi.
+      // Jenis highway OSM / jenis jalan hasil deteksi backend
       final highway = (jenisJalanOSM.value ?? '').trim().toLowerCase();
 
       switch (highway) {
@@ -291,50 +291,47 @@ class ReportFormController extends GetxController {
         case 'motorway_link':
         case 'trunk':
         case 'trunk_link':
-          kewenanganOSM.value = 'Perkiraan jalan nasional — perlu verifikasi';
+        case 'nasional':
+          kewenanganOSM.value = 'Pemerintah Pusat (Nasional)';
           penjelasanKewenangan.value =
-              'Tipe jalan dari OpenStreetMap mengarah pada '
-              'kelas jalan utama. Status kewenangan resminya '
-              'tetap perlu diverifikasi.';
+              'Ruas jalan nasional yang menjadi wewenang Kementerian PUPR / Pemerintah Pusat.';
           break;
 
         case 'primary':
         case 'primary_link':
+        case 'provinsi':
+          kewenanganOSM.value = 'Pemerintah Provinsi';
+          penjelasanKewenangan.value =
+              'Ruas jalan arteri/kolektor primer di bawah kewenangan Dinas Bina Marga Provinsi.';
+          break;
+
         case 'secondary':
         case 'secondary_link':
         case 'tertiary':
         case 'tertiary_link':
-          kewenanganOSM.value = 'Belum dapat dipastikan';
+        case 'kabupaten':
+          kewenanganOSM.value = 'Pemerintah Kabupaten';
           penjelasanKewenangan.value =
-              'Jenis jalan berhasil ditemukan, tetapi '
-              'penanggung jawab belum dapat dipastikan '
-              'dari tipe OpenStreetMap saja.';
+              'Ruas jalan kabupaten di bawah kewenangan Dinas Pekerjaan Umum (DPUPR) Kabupaten.';
           break;
 
         case 'residential':
-          kewenanganOSM.value = 'Belum terverifikasi — kemungkinan jalan lokal';
-          penjelasanKewenangan.value =
-              'Residential berarti jalan permukiman. '
-              'Penanggung jawabnya bisa pemerintah desa '
-              'atau instansi lain dan perlu diverifikasi.';
-          break;
-
         case 'living_street':
         case 'unclassified':
         case 'service':
         case 'road':
-          kewenanganOSM.value = 'Belum dapat dipastikan';
+        case 'track':
+        case 'path':
+        case 'desa':
+          kewenanganOSM.value = 'Pemerintah Desa (Pemdes)';
           penjelasanKewenangan.value =
-              'Tipe jalan sudah ditemukan, tetapi instansi '
-              'penanggung jawab masih perlu diperiksa.';
+              'Ruas jalan lingkungan/permukiman desa di bawah kewenangan Pemerintah Desa setempat.';
           break;
 
         default:
-          kewenanganOSM.value = 'Menunggu verifikasi superadmin';
+          kewenanganOSM.value = 'Pemerintah Kabupaten';
           penjelasanKewenangan.value =
-              'Data tipe jalan belum cukup untuk menentukan '
-              'instansi penanggung jawab. Mohon menunggu '
-              'verifikasi superadmin.';
+              'Ruas jalan berada di bawah pantauan dan tindak lanjut Pemerintah Kabupaten.';
       }
     } on TimeoutException {
       if (seq != _roadCheckSeq) return;

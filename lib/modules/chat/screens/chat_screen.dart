@@ -9,8 +9,15 @@ import '../models/chat_message_model.dart';
 
 class ChatScreen extends StatefulWidget {
   final int laporanId;
+  final String? jenisJalan;
+  final String? kewenanganJalan;
 
-  const ChatScreen({super.key, required this.laporanId});
+  const ChatScreen({
+    super.key,
+    required this.laporanId,
+    this.jenisJalan,
+    this.kewenanganJalan,
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -59,35 +66,42 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     final match = RegExp(
-      r'^\w+,\s*(\d{1,2})\s+(\w+)\s+(\d{4})\s+jam\s+(\d{2}):(\d{2})\s+WIB$',
+      r'^\w+,\s*(\d{1,2})\s+(\w+)\s+(\d{4})\s+jam\s+(\d{1,2}):(\d{2})(?:\s+([A-Za-z]+))?$',
       caseSensitive: false,
     ).firstMatch(text);
 
     if (match != null) {
       const bulan = {
-        'Januari': 1,
-        'Februari': 2,
-        'Maret': 3,
-        'April': 4,
-        'Mei': 5,
-        'Juni': 6,
-        'Juli': 7,
-        'Agustus': 8,
-        'September': 9,
-        'Oktober': 10,
-        'November': 11,
-        'Desember': 12,
+        'januari': 1,
+        'jan': 1,
+        'februari': 2,
+        'feb': 2,
+        'maret': 3,
+        'mar': 3,
+        'april': 4,
+        'apr': 4,
+        'mei': 5,
+        'juni': 6,
+        'jun': 6,
+        'juli': 7,
+        'jul': 7,
+        'agustus': 8,
+        'agu': 8,
+        'ags': 8,
+        'september': 9,
+        'sep': 9,
+        'oktober': 10,
+        'okt': 10,
+        'november': 11,
+        'nov': 11,
+        'desember': 12,
+        'des': 12,
       };
 
       final namaBulan = match.group(2)!.toLowerCase();
-      final nomorBulan = bulan.entries
-          .firstWhere(
-            (entry) => entry.key.toLowerCase() == namaBulan,
-            orElse: () => const MapEntry('', 0),
-          )
-          .value;
+      final nomorBulan = bulan[namaBulan];
 
-      if (nomorBulan != 0) {
+      if (nomorBulan != null) {
         return DateTime(
           int.parse(match.group(3)!),
           nomorBulan,
@@ -117,7 +131,23 @@ class _ChatScreenState extends State<ChatScreen> {
       );
 
       // Balasan admin ditampilkan sebagai pesan terpisah.
-      if (item.balasan != null && item.balasan!.trim().isNotEmpty) {
+      final balasanText = item.balasan?.trim();
+      final lampiranUrl = item.lampiranBalasanUrl?.trim();
+      final hasBalasan = (balasanText != null && balasanText.isNotEmpty) ||
+          (lampiranUrl != null && lampiranUrl.isNotEmpty);
+
+      if (hasBalasan) {
+        final medias = <ChatMedia>[];
+        if (lampiranUrl != null && lampiranUrl.isNotEmpty) {
+          medias.add(
+            ChatMedia(
+              url: lampiranUrl,
+              fileName: 'Lampiran Admin',
+              type: MediaType.image,
+            ),
+          );
+        }
+
         result.add(
           ChatMessage(
             user: ChatUser(
@@ -125,7 +155,8 @@ class _ChatScreenState extends State<ChatScreen> {
               firstName: item.namaAdmin ?? 'Admin ROADIS',
             ),
             createdAt: _parseDate(item.waktuBalas ?? item.waktuKirim),
-            text: item.balasan!,
+            text: balasanText ?? '',
+            medias: medias.isNotEmpty ? medias : null,
           ),
         );
       }
@@ -257,6 +288,19 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildHeader() {
+    String adminTitle = 'Layanan Admin';
+    final jj = (widget.jenisJalan ?? '').toLowerCase().trim();
+    final kw = (widget.kewenanganJalan ?? '').toLowerCase().trim();
+    if (jj == 'desa' || kw.contains('pemdes') || kw.contains('desa')) {
+      adminTitle = 'Admin Pemdes';
+    } else if (jj == 'kabupaten' || kw.contains('kabupaten') || kw.contains('pu')) {
+      adminTitle = 'Admin Dinas PU';
+    } else if (jj == 'provinsi' || kw.contains('provinsi')) {
+      adminTitle = 'Admin Provinsi';
+    } else if (jj == 'nasional' || kw.contains('nasional')) {
+      adminTitle = 'Admin Nasional';
+    }
+
     return Container(
           width: double.infinity,
           padding: EdgeInsets.only(
@@ -307,9 +351,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Layanan Admin',
-                      style: TextStyle(
+                    Text(
+                      adminTitle,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 17,
                         fontWeight: FontWeight.bold,

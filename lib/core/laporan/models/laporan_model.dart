@@ -66,11 +66,58 @@ class LaporanModel {
         (json['jenis_jalan'] ?? json['road_type'] ?? json['jenis_jalan_osm'])
             ?.toString();
 
-    final kewenanganJalan =
+    String? kewenanganJalan =
         (json['kewenangan_jalan'] ??
                 json['kewenangan'] ??
                 json['penanggung_jawab'])
             ?.toString();
+
+    // Jika kewenanganJalan belum terisi langsung dari backend,
+    // turunkan dari jenis_jalan (contoh: 'desa', 'kabupaten', 'provinsi', 'nasional')
+    if (kewenanganJalan == null ||
+        kewenanganJalan.trim().isEmpty ||
+        kewenanganJalan == 'belum_pasti' ||
+        kewenanganJalan == 'belum diketahui') {
+      if (jenisJalan != null &&
+          jenisJalan.trim().isNotEmpty &&
+          jenisJalan != 'belum_pasti') {
+        switch (jenisJalan.toLowerCase().trim()) {
+          case 'desa':
+            kewenanganJalan = 'Pemerintah Desa (Pemdes)';
+            break;
+          case 'kabupaten':
+            kewenanganJalan = 'Pemerintah Kabupaten';
+            break;
+          case 'provinsi':
+            kewenanganJalan = 'Pemerintah Provinsi';
+            break;
+          case 'nasional':
+            kewenanganJalan = 'Pemerintah Pusat (Nasional)';
+            break;
+          case 'residential':
+          case 'living_street':
+          case 'unclassified':
+          case 'service':
+          case 'track':
+            kewenanganJalan = 'Pemerintah Desa (Pemdes)';
+            break;
+          case 'tertiary':
+          case 'tertiary_link':
+          case 'secondary':
+          case 'secondary_link':
+          case 'primary':
+          case 'primary_link':
+            kewenanganJalan = 'Pemerintah Kabupaten';
+            break;
+          case 'trunk':
+          case 'trunk_link':
+          case 'motorway':
+          case 'motorway_link':
+            kewenanganJalan = 'Pemerintah Pusat (Nasional)';
+            break;
+        }
+      }
+    }
 
     return LaporanModel(
       id: (json['id'] as num?)?.toInt() ?? 0,
