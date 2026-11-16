@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:roadis/core/laporan/models/laporan_model.dart';
 import 'package:roadis/routes/app_routes.dart';
+import 'package:roadis/utils/location_service.dart';
 import 'package:roadis/utils/widgets/show_snackbar.dart';
 import '../controllers/maps_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -23,23 +24,224 @@ class _MapScreenState extends State<MapScreen> {
   final _c = Get.put(MapsController());
 
   final LatLng _indramayuCenter = const LatLng(-6.4731, 108.3039);
+  LatLng? _currentLocation;
+  bool _isLocating = false;
 
   @override
   void initState() {
     super.initState();
     // Setiap kali searchQuery berubah, cek hasil filter dan geser peta
     ever(_c.searchQuery, (_) => _moveToFirstResult());
+    _initUserLocation();
+  }
+
+  Future<void> _initUserLocation() async {
+    setState(() => _isLocating = true);
+    try {
+      final pos = await LocationService.getCurrentLocation();
+      if (pos != null && mounted) {
+        final userPoint = LatLng(pos.latitude, pos.longitude);
+        setState(() {
+          _currentLocation = userPoint;
+        });
+        _mapController.move(userPoint, 16.0);
+      }
+    } catch (_) {
+      // Abaikan jika GPS gagal di awal
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
+    }
+  }
+
+  Future<void> _moveToUserLocation() async {
+    if (_currentLocation != null) {
+      _mapController.move(_currentLocation!, 16.0);
+      return;
+    }
+
+    setState(() => _isLocating = true);
+    try {
+      final pos = await LocationService.getCurrentLocation();
+      if (pos != null && mounted) {
+        final userPoint = LatLng(pos.latitude, pos.longitude);
+        setState(() {
+          _currentLocation = userPoint;
+        });
+        _mapController.move(userPoint, 16.0);
+      } else {
+        _mapController.move(_indramayuCenter, 15.0);
+      }
+    } catch (_) {
+      _mapController.move(_indramayuCenter, 15.0);
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
+    }
   }
 
   void _moveToFirstResult() {
-    if (_c.searchQuery.value.trim().isEmpty) return;
-    final hasil = _c.filteredLaporan;
-    if (hasil.isNotEmpty) {
-      _mapController.move(
-        LatLng(hasil.first.latitude, hasil.first.longitude),
-        16,
-      );
-    }
+    if (_c.filteredLaporan.isEmpty) return;
+
+    final firstResult = _c.filteredLaporan.first;
+    _mapController.move(
+      LatLng(firstResult.latitude, firstResult.longitude),
+      16.0,
+    );
+  }
+
+  void _showFilterBottomSheet() {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Filter Peta Laporan',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    _c.resetFilters();
+                    Get.back();
+                  },
+                  child: Text(
+                    'Reset',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0284C7),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Status Laporan',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Obx(() => Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final filter in MapsController.filterOptions)
+                      _buildModernFilterChip(
+                        filter,
+                        _c.selectedFilter.value == filter,
+                        () => _c.selectFilter(filter),
+                      ),
+                  ],
+                )),
+            const SizedBox(height: 18),
+            Text(
+              'Kewenangan Jalan',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Obx(() => Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final kw in MapsController.kewenanganOptions)
+                      _buildModernFilterChip(
+                        kw == 'Semua' ? 'Semua Kewenangan' : 'Jalan $kw',
+                        _c.selectedKewenangan.value == kw,
+                        () => _c.selectKewenangan(kw),
+                        accentColor: const Color(0xFF0D9488),
+                      ),
+                  ],
+                )),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => Get.back(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0284C7),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Text(
+                  'Terapkan Filter',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _buildModernFilterChip(
+    String label,
+    bool isSelected,
+    VoidCallback onTap, {
+    Color accentColor = const Color(0xFF0284C7),
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? accentColor : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? accentColor : Colors.transparent,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : Colors.grey.shade800,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -96,6 +298,38 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                   MarkerLayer(
                     markers: [
+                      if (_currentLocation != null)
+                        Marker(
+                          point: _currentLocation!,
+                          width: 44,
+                          height: 44,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0284C7),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 3,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       for (final lap in _c.filteredLaporan)
                         Marker(
                           point: LatLng(lap.latitude, lap.longitude),
@@ -179,36 +413,70 @@ class _MapScreenState extends State<MapScreen> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Container(
-                            height: 48,
-                            width: 48,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.06),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
+                          Obx(() {
+                            final hasActiveFilter = _c.selectedFilter.value != 'Semua' ||
+                                _c.selectedKewenangan.value != 'Semua';
+                            return InkWell(
+                              onTap: _showFilterBottomSheet,
+                              borderRadius: BorderRadius.circular(24),
+                              child: Container(
+                                height: 48,
+                                width: 48,
+                                decoration: BoxDecoration(
+                                  color: hasActiveFilter
+                                      ? const Color(0xFF0284C7)
+                                      : Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: hasActiveFilter
+                                          ? const Color(0x330284C7)
+                                          : Colors.black.withOpacity(0.06),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.tune_rounded,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.tune_rounded,
+                                      color: hasActiveFilter
+                                          ? Colors.white
+                                          : Colors.grey.shade700,
+                                      size: 20,
+                                    ),
+                                    if (hasActiveFilter)
+                                      Positioned(
+                                        top: 10,
+                                        right: 10,
+                                        child: Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: const BoxDecoration(
+                                            color: Colors.amber,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
                         ],
                       ),
                       const SizedBox(height: 10),
                       Obx(() {
                         return SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
                           child: Row(
                             children: [
                               for (final filter in MapsController.filterOptions)
                                 _buildFilterChip(
-                                  '$filter (${_c.countFor(filter)})',
+                                  filter == 'Semua' ? 'Semua (${_c.semuaLaporan.length})' : filter,
                                   _c.selectedFilter.value == filter,
                                   () => _c.selectFilter(filter),
                                 ),
@@ -234,9 +502,10 @@ class _MapScreenState extends State<MapScreen> {
                   top: 130,
                   child: Column(
                     children: [
-                      _buildMapButton(Icons.my_location, () {
-                        _mapController.move(_indramayuCenter, 15);
-                      }),
+                      _buildMapButton(
+                        _isLocating ? Icons.hourglass_top_rounded : Icons.my_location,
+                        _moveToUserLocation,
+                      ),
                       const SizedBox(height: 8),
                       Container(
                         decoration: BoxDecoration(
@@ -329,27 +598,39 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, bool isSelected, VoidCallback onTap) {
+  Widget _buildFilterChip(
+    String label,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF0284C7) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? const Color(0xFF0284C7) : Colors.grey.shade200,
+            width: 1,
           ),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
+            BoxShadow(
+              color: isSelected
+                  ? const Color(0x330284C7)
+                  : Colors.black.withOpacity(0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Text(
           label,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 11,
-            fontWeight: FontWeight.w600,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
             color: isSelected ? Colors.white : Colors.grey.shade700,
           ),
         ),
@@ -415,15 +696,15 @@ class _DetailCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -434,18 +715,21 @@ class _DetailCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(
-                  Icons.warning_amber_rounded,
-                  color: color,
-                  size: 28,
+                child: Center(
+                  child: Icon(
+                    Icons.warning_amber_rounded,
+                    color: color,
+                    size: 26,
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,19 +738,20 @@ class _DetailCard extends StatelessWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
+                            horizontal: 9,
+                            vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
+                            color: color.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             laporan.status.statusLabel.toUpperCase(),
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 9,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w800,
                               color: color,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
@@ -475,7 +760,8 @@ class _DetailCard extends StatelessWidget {
                           child: Text(
                             laporan.waktuLaporan,
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 10,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
                               color: Colors.grey.shade500,
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -483,7 +769,7 @@ class _DetailCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       laporan.tipeKerusakan.isNotEmpty
                           ? laporan.tipeKerusakan
@@ -491,25 +777,26 @@ class _DetailCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
                         color: Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
                         Icon(
-                          Icons.location_on_outlined,
-                          size: 12,
-                          color: Colors.grey.shade500,
+                          Icons.location_on_rounded,
+                          size: 13,
+                          color: const Color(0xFF0284C7),
                         ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             laporan.wilayahNama ?? laporan.judul,
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
                               color: Colors.grey.shade600,
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -520,13 +807,15 @@ class _DetailCard extends StatelessWidget {
                   ],
                 ),
               ),
-              InkWell(
-                onTap: onClose,
-                child: Icon(Icons.close, size: 18, color: Colors.grey.shade400),
+              IconButton(
+                onPressed: onClose,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Icon(Icons.close_rounded, size: 20, color: Colors.grey.shade400),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
@@ -539,44 +828,45 @@ class _DetailCard extends StatelessWidget {
                     backgroundColor: const Color(0xFF0284C7),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
                   ),
                   child: Text(
                     'Lihat Rincian Laporan',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 flex: 1,
                 child: OutlinedButton.icon(
                   onPressed: _openNavigation,
                   icon: const Icon(
-                    Icons.navigation_outlined,
-                    size: 14,
+                    Icons.navigation_rounded,
+                    size: 15,
                     color: Color(0xFF0284C7),
                   ),
                   label: Text(
                     'Navigasi',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       color: const Color(0xFF0284C7),
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.grey.shade300),
+                    side: BorderSide(color: const Color(0xFF0284C7).withOpacity(0.35)),
+                    backgroundColor: const Color(0xFF0284C7).withOpacity(0.04),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
                   ),
                 ),
               ),

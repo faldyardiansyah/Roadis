@@ -86,13 +86,13 @@ class LaporanModel {
             kewenanganJalan = 'Pemerintah Desa (Pemdes)';
             break;
           case 'kabupaten':
-            kewenanganJalan = 'Pemerintah Kabupaten';
+            kewenanganJalan = 'Pemerintah Kabupaten (Kab. Indramayu)';
             break;
           case 'provinsi':
-            kewenanganJalan = 'Pemerintah Provinsi';
+            kewenanganJalan = 'Pemerintah Provinsi (Provinsi Jawa Barat)';
             break;
           case 'nasional':
-            kewenanganJalan = 'Pemerintah Pusat (Nasional)';
+            kewenanganJalan = 'Pemerintah Pusat (Nasional RI / PUPR)';
             break;
           case 'residential':
           case 'living_street':
@@ -105,15 +105,17 @@ class LaporanModel {
           case 'tertiary_link':
           case 'secondary':
           case 'secondary_link':
+            kewenanganJalan = 'Pemerintah Kabupaten (Kab. Indramayu)';
+            break;
           case 'primary':
           case 'primary_link':
-            kewenanganJalan = 'Pemerintah Kabupaten';
+            kewenanganJalan = 'Pemerintah Provinsi (Provinsi Jawa Barat)';
             break;
           case 'trunk':
           case 'trunk_link':
           case 'motorway':
           case 'motorway_link':
-            kewenanganJalan = 'Pemerintah Pusat (Nasional)';
+            kewenanganJalan = 'Pemerintah Pusat (Nasional RI / PUPR)';
             break;
         }
       }

@@ -10,20 +10,36 @@ class MapsController extends GetxController {
 
   final semuaLaporan = <LaporanModel>[].obs;
   final selectedFilter = 'Semua'.obs;
+  final selectedKewenangan = 'Semua'.obs;
   final selectedLaporan = Rxn<LaporanModel>();
 
   // menyimpan teks yang diketik di kotak pencarian
   final searchQuery = ''.obs;
 
-  static const filterOptions = ['Semua', 'Menunggu', 'Diproses', 'Selesai'];
+  static const filterOptions = ['Semua', 'Diproses', 'Selesai'];
+  static const kewenanganOptions = ['Semua', 'Desa', 'Kabupaten'];
 
-  // sekarang menyaring berdasarkan status DAN teks pencarian
+  // sekarang menyaring berdasarkan status (menolak status menunggu & ditolak dari peta publik) DAN teks pencarian
   List<LaporanModel> get filteredLaporan {
     var result = semuaLaporan.toList();
     if (selectedFilter.value != 'Semua') {
       result = result
           .where((e) => e.status.statusLabel == selectedFilter.value)
           .toList();
+    }
+
+    if (selectedKewenangan.value != 'Semua') {
+      final target = selectedKewenangan.value.toLowerCase();
+      result = result.where((e) {
+        final jj = (e.jenisJalan ?? '').toLowerCase();
+        final kw = (e.kewenanganJalan ?? '').toLowerCase();
+        if (target == 'desa') {
+          return jj == 'desa' || kw.contains('desa') || kw.contains('pemdes');
+        } else if (target == 'kabupaten') {
+          return jj == 'kabupaten' || kw.contains('kabupaten') || kw.contains('pu');
+        }
+        return true;
+      }).toList();
     }
 
     final query = searchQuery.value.trim().toLowerCase();
@@ -54,10 +70,15 @@ class MapsController extends GetxController {
     errorMessage.value = null;
     try {
       final data = await _service.getPeta();
-      semuaLaporan.value =
-          data.where((e) => e.status.toLowerCase() != 'ditolak').toList();
+      // Hanya tampilkan laporan yang valid (sembunyikan status menunggu dan ditolak dari peta publik)
+      semuaLaporan.value = data.where((e) {
+        final st = e.status.toLowerCase().trim();
+        return st != 'menunggu' && st != 'ditolak';
+      }).toList();
       if (semuaLaporan.isNotEmpty) {
         selectedLaporan.value = semuaLaporan.first;
+      } else {
+        selectedLaporan.value = null;
       }
     } catch (e) {
       errorMessage.value = e.toString();
@@ -68,6 +89,10 @@ class MapsController extends GetxController {
 
   void selectFilter(String filter) {
     selectedFilter.value = filter;
+  }
+
+  void selectKewenangan(String kewenangan) {
+    selectedKewenangan.value = kewenangan;
   }
 
   void selectLaporan(LaporanModel laporan) {
@@ -87,5 +112,6 @@ class MapsController extends GetxController {
   void resetFilters() {
     searchQuery.value = '';
     selectedFilter.value = 'Semua';
+    selectedKewenangan.value = 'Semua';
   }
 }

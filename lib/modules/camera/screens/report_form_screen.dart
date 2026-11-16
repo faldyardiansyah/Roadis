@@ -1,8 +1,9 @@
 import 'dart:io';
+
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
@@ -10,14 +11,20 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:roadis/core/detection/models/detection_result.dart';
+import 'package:roadis/core/detection/services/groq_service.dart';
 import 'package:roadis/core/laporan/models/wilayah_model.dart';
 import 'package:roadis/modules/camera/controllers/report_form_controller.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/utils/widgets/show_snackbar.dart';
+
 import '../presentation/report_succes_screen.dart';
+
+/// Perkiraan pihak yang bertanggung jawab atas ruas jalan.
+enum _Authority { pusat, provinsi, kabupaten, desa, unknown }
 
 class ReportFormScreen extends StatefulWidget {
   final XFile image;
+  final XFile? rawImage;
   final Position position;
   final DetectionResult? detection;
   final List<WilayahModel> wilayahList;
@@ -25,6 +32,7 @@ class ReportFormScreen extends StatefulWidget {
   const ReportFormScreen({
     super.key,
     required this.image,
+    this.rawImage,
     required this.position,
     this.detection,
     this.wilayahList = const [],
@@ -40,19 +48,54 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
   late final ReportFormController _controller;
   late final String _controllerTag;
 
-  // warna utama dari app_colors
+  DetectionResult? _currentDetection;
+  bool _isSwitchingToGroq = false;
+
+  // Warna
   static const Color _primary = AppColors.primaryColor;
   static const Color _dark = AppColors.darkTextColor;
   static const Color _muted = AppColors.greyColor;
   static const Color _background = AppColors.backgroundColor;
-  static const Color _border = AppColors.whitetr;
+  static const Color _line = Color(0xFFE2E8F0);
+  static const Color _fieldFill = Color(0xFFF8FAFC);
+  static const Color _ok = Color(0xFF16A34A);
+  static const Color _warn = Color(0xFFD97706);
+  static const Color _danger = Color(0xFFDC2626);
+  static const Color _info = Color(0xFF0284C7);
+
+  // Pemetaan tipe jalan OSM / nilai kewenangan -> penanggung jawab
+  static const _pusatTypes = {
+    'nasional',
+    'trunk',
+    'trunk_link',
+    'motorway',
+    'motorway_link',
+  };
+  static const _provinsiTypes = {'provinsi', 'primary', 'primary_link'};
+  static const _desaTypes = {
+    'desa',
+    'residential',
+    'living_street',
+    'unclassified',
+    'service',
+    'track',
+    'path',
+    'road',
+  };
+  static const _kabupatenTypes = {
+    'kabupaten',
+    'secondary',
+    'secondary_link',
+    'tertiary',
+    'tertiary_link',
+  };
 
   @override
   void initState() {
     super.initState();
 
+    _currentDetection = widget.detection;
     _controllerTag = 'report_form_${DateTime.now().microsecondsSinceEpoch}';
-
     _controller = Get.put(ReportFormController(), tag: _controllerTag);
 
     _controller.initialize(
@@ -69,82 +112,255 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     super.dispose();
   }
 
-  TextStyle get _titleStyle => GoogleFonts.plusJakartaSans(
-    fontSize: 15,
-    fontWeight: FontWeight.w800,
-    color: _dark,
-  );
+  Future<void> _switchDetectionToGroq() async {
+    if (_isSwitchingToGroq) return;
 
-  TextStyle get _bodyStyle =>
-      GoogleFonts.plusJakartaSans(fontSize: 12, color: _muted, height: 1.6);
+    setState(() => _isSwitchingToGroq = true);
 
-  Widget _sectionTitle(String title, String subtitle, IconData icon) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 43,
-          height: 43,
-          decoration: BoxDecoration(
-            color: _primary.withValues(alpha: 0.09),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(icon, color: _primary, size: 21),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: _titleStyle),
-              const SizedBox(height: 4),
-              Text(subtitle, style: _bodyStyle),
-            ],
-          ),
-        ),
-      ],
+    try {
+      final source = widget.rawImage ?? widget.image;
+      final bytes = await source.readAsBytes();
+      final result = await GroqService.detectRoadDamage(bytes);
+
+      if (!mounted) return;
+
+      if (result != null) {
+        setState(() => _currentDetection = result);
+        _controller.updateDetection(result);
+
+        showAwesomeSnackbar(
+          title: 'Deteksi Groq AI berhasil',
+          message:
+              'Terdeteksi: ${result.displayName} (${(result.confidence * 100).toStringAsFixed(1)}%)',
+          contentType: ContentType.success,
+        );
+      } else {
+        showAwesomeSnackbar(
+          title: 'Groq AI',
+          message: 'Groq tidak menemukan pola kerusakan yang spesifik.',
+          contentType: ContentType.help,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      showAwesomeSnackbar(
+        title: 'Groq AI gagal dipakai',
+        message: e.toString().replaceFirst('Exception: ', ''),
+        contentType: ContentType.failure,
+      );
+    } finally {
+      if (mounted) setState(() => _isSwitchingToGroq = false);
+    }
+  }
+
+  Future<void> _submitReport() async {
+    FocusScope.of(context).unfocus();
+
+    if (!_formKey.currentState!.validate()) return;
+
+    try {
+      final reportData = await _controller.submitReport();
+
+      if (!mounted || reportData == null) return;
+
+      HapticFeedback.mediumImpact();
+
+      Get.off(() => ReportSuccessScreen(report: reportData));
+    } catch (e) {
+      if (!mounted) return;
+
+      showAwesomeSnackbar(
+        title: 'Laporan gagal dikirim',
+        message: e.toString().replaceFirst('Exception: ', ''),
+        contentType: ContentType.failure,
+      );
+    }
+  }
+
+  _Authority _resolveAuthority(String jenis, String kewenangan) {
+    bool has(String s) => kewenangan.contains(s);
+
+    if (has('nasional') ||
+        has('pusat') ||
+        has('pupr') ||
+        _pusatTypes.contains(jenis)) {
+      return _Authority.pusat;
+    }
+    if (has('provinsi') || has('jabar') || _provinsiTypes.contains(jenis)) {
+      return _Authority.provinsi;
+    }
+    if (has('pemdes') || has('desa') || _desaTypes.contains(jenis)) {
+      return _Authority.desa;
+    }
+    if (has('kabupaten') ||
+        has('dinas pu') ||
+        _kabupatenTypes.contains(jenis)) {
+      return _Authority.kabupaten;
+    }
+    return _Authority.unknown;
+  }
+
+  String _authorityLabel(_Authority a) {
+    switch (a) {
+      case _Authority.pusat:
+        return 'Pemerintah Pusat (Kementerian PU)';
+      case _Authority.provinsi:
+        return 'Pemerintah Provinsi Jawa Barat';
+      case _Authority.kabupaten:
+        return 'Pemerintah Kab. Indramayu';
+      case _Authority.desa:
+        return 'Pemerintah Desa';
+      case _Authority.unknown:
+        return 'Belum dapat dipastikan';
+    }
+  }
+
+  String _authorityNote(_Authority a) {
+    switch (a) {
+      case _Authority.pusat:
+        return 'Ruas ini kewenangan Pemerintah Pusat (Kementerian PU). '
+            'Karena berada di Kabupaten Indramayu, laporanmu tetap diterima, '
+            'diverifikasi, dan dikoordinasikan oleh Dinas PU Kab. Indramayu '
+            'dan Superadmin.';
+      case _Authority.provinsi:
+        return 'Ruas ini kewenangan Pemerintah Provinsi Jawa Barat '
+            '(Dinas Bina Marga). Laporan tetap diterima dan diteruskan oleh '
+            'Dinas PU Kab. Indramayu dan Superadmin.';
+      case _Authority.desa:
+        return 'Ruas jalan lingkungan ini berada di bawah kewenangan teknis '
+            'Pemerintah Desa setempat.';
+      case _Authority.kabupaten:
+        return 'Ruas ini dikelola Pemerintah Kabupaten Indramayu '
+            '(Dinas PUPR Kab. Indramayu).';
+      case _Authority.unknown:
+        return 'Penanggung jawab ruas ini belum bisa dipastikan dari data '
+            'peta. Laporanmu tetap akan ditinjau oleh Dinas PU Kab. Indramayu.';
+    }
+  }
+
+  String _jenisJalanLabel(String jenis) {
+    switch (jenis) {
+      case 'residential':
+        return 'Jalan permukiman';
+      case 'living_street':
+        return 'Jalan lingkungan';
+      case 'primary':
+      case 'primary_link':
+        return 'Arteri utama';
+      case 'secondary':
+      case 'secondary_link':
+        return 'Arteri sekunder';
+      case 'tertiary':
+      case 'tertiary_link':
+        return 'Jalan penghubung';
+      case 'motorway':
+      case 'motorway_link':
+        return 'Jalan bebas hambatan';
+      case 'trunk':
+      case 'trunk_link':
+        return 'Jalan utama';
+      case 'unclassified':
+        return 'Jalan lokal';
+      case 'service':
+        return 'Jalan akses';
+      case 'track':
+        return 'Jalan akses lahan';
+      case 'road':
+        return 'Jenis belum diketahui';
+      default:
+        return jenis.isEmpty ? 'Belum diketahui' : jenis;
+    }
+  }
+
+  static TextStyle _text(
+    double size, {
+    FontWeight weight = FontWeight.w500,
+    Color color = _dark,
+    double? height,
+  }) {
+    return GoogleFonts.plusJakartaSans(
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+      height: height,
     );
   }
 
+  TextStyle get _body => _text(12, color: _muted, height: 1.55);
+
   Widget _card({
     required Widget child,
-    EdgeInsetsGeometry padding = const EdgeInsets.all(18),
+    EdgeInsetsGeometry padding = const EdgeInsets.all(16),
   }) {
     return Container(
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _border),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.035),
-            blurRadius: 20,
-            offset: const Offset(0, 7),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _line),
       ),
       child: child,
     );
   }
 
+  Widget _sectionHeader(String title, {String? subtitle, Widget? trailing}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: _text(14, weight: FontWeight.w800)),
+              if (subtitle != null) ...[
+                const SizedBox(height: 3),
+                Text(subtitle, style: _body),
+              ],
+            ],
+          ),
+        ),
+        if (trailing != null) ...[const SizedBox(width: 8), trailing],
+      ],
+    );
+  }
+
+  Widget _chipButton({
+    required String label,
+    required VoidCallback? onPressed,
+    Widget? icon,
+    Color color = _info,
+  }) {
+    return TextButton.icon(
+      onPressed: onPressed,
+      icon: icon ?? const SizedBox.shrink(),
+      label: Text(
+        label,
+        style: _text(11, weight: FontWeight.w700, color: color),
+      ),
+      style: TextButton.styleFrom(
+        foregroundColor: color,
+        backgroundColor: color.withValues(alpha: 0.08),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
   Widget _label(String text, {bool required = false}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
+      padding: const EdgeInsets.only(bottom: 8),
       child: RichText(
         text: TextSpan(
           text: text,
-          style: GoogleFonts.plusJakartaSans(
-            color: _dark,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
+          style: _text(12, weight: FontWeight.w700),
           children: [
             if (required)
-              const TextSpan(
+              TextSpan(
                 text: ' *',
-                style: TextStyle(color: Colors.red),
+                style: _text(12, weight: FontWeight.w700, color: _danger),
               ),
           ],
         ),
@@ -152,183 +368,27 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     );
   }
 
-  InputDecoration _inputDecoration({
-    required String hint,
-    required IconData icon,
-  }) {
+  InputDecoration _inputDecoration(String hint) {
+    OutlineInputBorder border(Color color, [double width = 1]) {
+      return OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: color, width: width),
+      );
+    }
+
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.plusJakartaSans(
-        color: const Color(0xFF94A3B8),
-        fontSize: 12,
-      ),
-      prefixIcon: Icon(icon, size: 19, color: _muted),
+      hintStyle: _text(12, color: const Color(0xFF94A3B8)),
+      errorStyle: _text(11, color: _danger),
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _border),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _border),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _primary, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.redAccent),
-      ),
+      fillColor: _fieldFill,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: border(_line),
+      enabledBorder: border(_line),
+      focusedBorder: border(_primary, 1.5),
+      errorBorder: border(_danger),
+      focusedErrorBorder: border(_danger, 1.5),
     );
-  }
-
-  Widget _buildImageCard() {
-    return _card(
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-            child: Image.file(
-              File(widget.image.path),
-              width: double.infinity,
-              height: 220,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                height: 180,
-                color: const Color(0xFFE2E8F0),
-                child: const Center(
-                  child: Icon(Icons.image_not_supported_outlined, size: 40),
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: const Icon(
-                    Icons.check_circle_outline,
-                    color: Color(0xFF15803D),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Foto kerusakan jalan', style: _titleStyle),
-                      const SizedBox(height: 4),
-                      Text('Foto yang dipilih dari kamera', style: _bodyStyle),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.verified_rounded, color: Color(0xFF16A34A)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08);
-  }
-
-  Widget _buildDetectionCard() {
-    final detection = widget.detection;
-
-    final confidence = detection == null
-        ? 0.0
-        : detection.confidence.clamp(0.0, 1.0).toDouble();
-
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionTitle(
-            'Hasil Deteksi AI',
-            'Analisis awal dari foto kerusakan',
-            Icons.auto_awesome,
-          ),
-          const SizedBox(height: 18),
-          if (detection == null)
-            _notice(
-              icon: Icons.info_outline,
-              color: const Color(0xFF64748B),
-              title: 'Belum ada hasil deteksi',
-              message:
-                  'Jenis kerusakan dapat kamu pilih secara manual di formulir.',
-            )
-          else ...[
-            Container(
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0F9FF),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFBAE6FD)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.center_focus_strong,
-                    color: _primary,
-                    size: 26,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          detection.displayName,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: _dark,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          'Tingkat keyakinan: ${(confidence * 100).toStringAsFixed(1)}%',
-                          style: _bodyStyle,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: LinearProgressIndicator(
-                value: confidence,
-                minHeight: 7,
-                backgroundColor: const Color(0xFFE2E8F0),
-                color: confidence >= 0.8
-                    ? const Color(0xFF16A34A)
-                    : const Color(0xFFF59E0B),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Hasil AI merupakan rekomendasi awal. '
-              'Pastikan jenis kerusakan sesuai dengan kondisi sebenarnya.',
-              style: _bodyStyle,
-            ),
-          ],
-        ],
-      ),
-    ).animate().fadeIn(delay: 80.ms).slideY(begin: 0.06);
   }
 
   Widget _notice({
@@ -339,24 +399,24 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 21),
+          Icon(icon, color: color, size: 19),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: _titleStyle),
-                const SizedBox(height: 5),
-                Text(message, style: _bodyStyle),
+                Text(title, style: _text(12, weight: FontWeight.w700)),
+                const SizedBox(height: 3),
+                Text(message, style: _body),
               ],
             ),
           ),
@@ -365,392 +425,195 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     );
   }
 
-  Widget _buildKewenanganCard() {
-    return Obx(() {
-      final c = _controller;
-      final checking = c.isCheckingRoad.value;
-      final error = c.roadCheckError.value;
-      final detected = c.roadDetected.value;
-
-      final jenisJalan = (c.jenisJalanOSM.value ?? '').toLowerCase().trim();
-      final kewenangan = (c.kewenanganOSM.value ?? '').toLowerCase().trim();
-      final namaJalan = c.namaJalanOSM.value;
-
-      String labelJenisJalan(String jenis) {
-        switch (jenis.toLowerCase().trim()) {
-          case 'residential':
-            return 'Residential (jalan permukiman)';
-          case 'living_street':
-            return 'Living street (jalan lingkungan)';
-          case 'primary':
-          case 'primary_link':
-            return 'Primary (jalan arteri utama)';
-          case 'secondary':
-          case 'secondary_link':
-            return 'Secondary (jalan arteri sekunder)';
-          case 'tertiary':
-          case 'tertiary_link':
-            return 'Tertiary (jalan penghubung)';
-          case 'motorway':
-          case 'motorway_link':
-            return 'Motorway (jalan bebas hambatan)';
-          case 'trunk':
-          case 'trunk_link':
-            return 'Trunk (jalan utama)';
-          case 'unclassified':
-            return 'Unclassified (jalan lokal)';
-          case 'service':
-            return 'Service (jalan akses)';
-          case 'track':
-            return 'Track (jalan akses lahan)';
-          case 'road':
-            return 'Road (jenis jalan belum diketahui)';
-          default:
-            return jenis.isEmpty ? 'Belum diketahui' : jenis;
-        }
-      }
-
-      String labelPenanggungJawab(String jenis, String nilai) {
-        // Gunakan data kewenangan dari backend jika tersedia.
-        switch (nilai) {
-          case 'pemdes':
-          case 'desa':
-          case 'pemerintah desa':
-          case 'pemerintah desa (pemdes)':
-            return 'Pemerintah Desa (Pemdes)';
-
-          case 'kabupaten':
-          case 'pemerintah kabupaten':
-          case 'pemerintah kabupaten / dinas pu':
-            return 'Pemerintah Kabupaten';
-
-          case 'provinsi':
-          case 'pemerintah provinsi':
-            return 'Pemerintah Provinsi';
-
-          case 'nasional':
-          case 'pemerintah pusat':
-          case 'pemerintah pusat / kementerian pu':
-          case 'perkiraan pemerintah pusat (nasional)':
-            return 'Pemerintah Pusat (Nasional)';
-        }
-
-        // Jika backend belum menentukan kewenangan,
-        // tampilkan perkiraan berdasarkan jenis jalan OSM.
-
-        switch (jenis) {
-          case 'residential':
-          case 'living_street':
-          case 'unclassified':
-          case 'service':
-          case 'track':
-            return 'Pemerintah Desa (Pemdes)';
-
-          case 'tertiary':
-          case 'tertiary_link':
-          case 'secondary':
-          case 'secondary_link':
-            return 'Pemerintah Kabupaten';
-
-          case 'primary':
-          case 'primary_link':
-            return 'Pemerintah Kabupaten';
-
-          case 'trunk':
-          case 'trunk_link':
-          case 'motorway':
-          case 'motorway_link':
-            return 'Pemerintah Pusat (Nasional)';
-
-          default:
-            return 'Belum dapat dipastikan';
-        }
-      }
-
-      final penanggungJawab = labelPenanggungJawab(jenisJalan, kewenangan);
-
-      return _card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionTitle(
-              'Informasi Jalan',
-              'Informasi jenis jalan dan perkiraan penanggung jawab',
-              Icons.account_balance_outlined,
-            ),
-            const SizedBox(height: 18),
-
-            if (checking)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(18),
-                  child: CircularProgressIndicator(color: _primary),
-                ),
-              )
-            else if (error != null)
-              _notice(
-                icon: Icons.cloud_off_outlined,
-                color: const Color(0xFFF59E0B),
-                title: 'Pemeriksaan belum selesai',
-                message: error,
-              )
-            else if (detected == false)
-              _notice(
-                icon: Icons.wrong_location_outlined,
-                color: const Color(0xFF64748B),
-                title: 'Jalan tidak ditemukan',
-                message:
-                    c.penjelasanKewenangan.value ??
-                    'Geser pin lebih dekat ke badan jalan, lalu periksa ulang.',
-              )
-            else if (detected == true) ...[
-              _notice(
-                icon: Icons.check_circle_outline,
-                color: const Color(0xFF16A34A),
-                title: 'Jalan berhasil diperiksa',
-                message: namaJalan == null || namaJalan.trim().isEmpty
-                    ? 'Jenis jalan berhasil ditemukan dari OpenStreetMap. Nama jalan belum tersedia.'
-                    : 'Nama jalan: $namaJalan',
-              ),
-
-              const SizedBox(height: 16),
-
-              _roadInfoRow(
-                Icons.route_outlined,
-                'Jenis jalan',
-                labelJenisJalan(jenisJalan),
-              ),
-
-              const Divider(height: 24, color: _border),
-
-              _roadInfoRow(
-                Icons.account_balance_outlined,
-                'Pemilik jalan',
-                penanggungJawab,
-              ),
-
-              const SizedBox(height: 14),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFFBEB),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFFDE68A)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.info_outline,
-                          color: Color(0xFFD97706),
-                          size: 19,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Catatan untuk warga',
-                            style: _titleStyle,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Pemilik jalan ditampilkan sebagai perkiraan '
-                      'berdasarkan jenis jalan OpenStreetMap. '
-                      'Penanggung jawab resmi tetap perlu diverifikasi '
-                      'oleh admin.',
-                      style: _bodyStyle,
-                    ),
-                  ],
-                ),
-              ),
-
-              if (c.jarakJalanOSM.value != null) ...[
-                const Divider(height: 24, color: _border),
-                _roadInfoRow(
-                  Icons.social_distance_outlined,
-                  'Jarak ke jalan',
-                  '${c.jarakJalanOSM.value!.toStringAsFixed(1)} meter',
-                ),
-              ],
-            ] else
-              _notice(
-                icon: Icons.help_outline,
-                color: const Color(0xFF64748B),
-                title: 'Belum diperiksa',
-                message: 'Ketuk tombol di bawah untuk memeriksa jalan.',
-              ),
-
-            const SizedBox(height: 16),
-
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: checking
-                    ? null
-                    : () => c.checkRoad(c.pickedPoint.value ?? c.gpsPoint),
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Periksa ulang jalan'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: _primary,
-                  side: const BorderSide(color: _border),
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ).animate().fadeIn(delay: 120.ms).slideY(begin: 0.06);
-    });
-  }
-
-  Widget _roadInfoRow(IconData icon, String label, String value) {
+  Widget _infoRow(String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 19, color: _muted),
-        const SizedBox(width: 10),
-        Expanded(child: Text(label, style: _bodyStyle)),
+        Expanded(flex: 2, child: Text(label, style: _body)),
         const SizedBox(width: 12),
-        Flexible(
+        Expanded(
+          flex: 3,
           child: Text(
             value,
             textAlign: TextAlign.end,
-            style: GoogleFonts.plusJakartaSans(
-              color: _dark,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
+            style: _text(12, weight: FontWeight.w700, height: 1.4),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildWawasanCard() {
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionTitle(
-            'Panduan Pelaporan',
-            'Pastikan informasi laporan sesuai kondisi lapangan',
-            Icons.lightbulb_outline_rounded,
+  List<Widget> _withDividers(List<Widget> rows) {
+    final out = <Widget>[];
+    for (var i = 0; i < rows.length; i++) {
+      if (i > 0) {
+        out.add(
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 11),
+            child: Divider(height: 1, color: _line),
           ),
-          const SizedBox(height: 16),
-          _bullet('Gunakan foto yang jelas dan memperlihatkan kerusakan.'),
-          _bullet('Periksa kembali titik lokasi pada peta sebelum mengirim.'),
-          _bullet(
-            'Pastikan judul, deskripsi, dan jenis kerusakan sudah sesuai.',
-          ),
-        ],
-      ),
-    ).animate().fadeIn(delay: 160.ms).slideY(begin: 0.06);
+        );
+      }
+      out.add(rows[i]);
+    }
+    return out;
   }
 
-  Widget _bullet(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildPhoto() {
+    final now = _controller.waktu;
+    String two(int n) => n.toString().padLeft(2, '0');
+    final stamp =
+        '${two(now.day)}/${two(now.month)}/${now.year}, ${two(now.hour)}:${two(now.minute)} WIB';
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(
         children: [
-          const Icon(Icons.check_circle, color: Color(0xFF16A34A), size: 18),
-          const SizedBox(width: 9),
-          Expanded(child: Text(text, style: _bodyStyle)),
+          Image.file(
+            File(widget.image.path),
+            width: double.infinity,
+            height: 230,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              height: 230,
+              color: _line,
+              alignment: Alignment.center,
+              child: const Icon(Icons.image_not_supported_outlined, size: 38),
+            ),
+          ),
+          Positioned(
+            left: 10,
+            bottom: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                stamp,
+                style: _text(11, weight: FontWeight.w600, color: Colors.white),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTimeCard() {
-    final now = _controller.waktu;
-
-    String two(int n) => n.toString().padLeft(2, '0');
-
-    final time = '${two(now.hour)}:${two(now.minute)}';
-    final date = '${two(now.day)}/${two(now.month)}/${now.year}';
+  Widget _buildDetectionCard() {
+    final d = _currentDetection;
+    final confidence = d == null
+        ? 0.0
+        : d.confidence.clamp(0.0, 1.0).toDouble();
+    final strong = confidence >= 0.8;
+    final barColor = strong ? _ok : _warn;
 
     return _card(
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F9FF),
-              borderRadius: BorderRadius.circular(15),
+          _sectionHeader(
+            'Hasil deteksi AI',
+            subtitle: d == null
+                ? 'Belum ada hasil deteksi'
+                : 'Rekomendasi awal, tetap periksa lagi',
+            trailing: _chipButton(
+              label: _isSwitchingToGroq ? 'Memproses...' : 'Pakai Groq AI',
+              onPressed: _isSwitchingToGroq ? null : _switchDetectionToGroq,
+              icon: _isSwitchingToGroq
+                  ? const SizedBox(
+                      width: 13,
+                      height: 13,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: _info,
+                      ),
+                    )
+                  : const Icon(Icons.psychology_outlined, size: 15),
             ),
-            child: const Icon(Icons.schedule_rounded, color: _primary),
           ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 14),
+          if (d == null)
+            Text(
+              'Pilih jenis kerusakan secara manual di formulir, atau coba deteksi dengan Groq AI.',
+              style: _body,
+            )
+          else ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
               children: [
-                Text('Waktu laporan', style: _titleStyle),
-                const SizedBox(height: 5),
-                Text('$date • $time WIB', style: _bodyStyle),
+                Expanded(
+                  child: Text(
+                    d.displayName,
+                    style: _text(17, weight: FontWeight.w800),
+                  ),
+                ),
+                Text(
+                  '${(confidence * 100).toStringAsFixed(1)}%',
+                  style: _text(17, weight: FontWeight.w800, color: barColor),
+                ),
               ],
             ),
-          ),
-          const Icon(Icons.verified_outlined, color: Color(0xFF16A34A)),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: confidence,
+                minHeight: 6,
+                backgroundColor: _line,
+                color: barColor,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              strong ? 'Tingkat keyakinan tinggi.' : 'Keyakinan belum tinggi. Pastikan jenis kerusakannya sesuai dengan foto.',
+              style: _body,
+            ),
+          ],
         ],
       ),
-    ).animate().fadeIn(delay: 200.ms);
+    );
   }
 
   Widget _buildWilayahField() {
     return Obx(() {
       final c = _controller;
+      final empty = c.wilayahList.isEmpty;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _label('Wilayah laporan', required: true),
+          _label('Wilayah', required: true),
           DropdownButtonFormField<int>(
             value: c.wilayahList.any((w) => w.id == c.selectedWilayahId.value)
                 ? c.selectedWilayahId.value
                 : null,
             isExpanded: true,
-            decoration: _inputDecoration(
-              hint: 'Pilih wilayah laporan',
-              icon: Icons.location_city_outlined,
-            ),
-            items: c.wilayahList.map((w) {
-              return DropdownMenuItem<int>(
-                value: w.id,
-                child: Text(
-                  w.nama,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: _dark,
-                    fontSize: 12,
+            decoration: _inputDecoration('Pilih wilayah'),
+            items: c.wilayahList
+                .map(
+                  (w) => DropdownMenuItem<int>(
+                    value: w.id,
+                    child: Text(
+                      w.nama,
+                      overflow: TextOverflow.ellipsis,
+                      style: _text(12),
+                    ),
                   ),
-                ),
-              );
-            }).toList(),
-            onChanged: (value) {
-              c.selectedWilayahId.value = value;
-            },
-            validator: (value) {
-              if (value == null) {
-                return 'Silakan pilih wilayah laporan';
-              }
-              return null;
-            },
+                )
+                .toList(),
+            onChanged: (value) => c.selectedWilayahId.value = value,
+            validator: (value) =>
+                value == null ? 'Pilih wilayah laporan' : null,
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 6),
           Text(
-            'Wilayah harus sesuai dengan lokasi kerusakan.',
-            style: _bodyStyle,
+            empty
+                ? 'Daftar wilayah belum termuat. Kembali ke kamera dan coba lagi.'
+                : 'Pilih wilayah tempat kerusakan berada.',
+            style: _body.copyWith(color: empty ? _warn : _muted),
           ),
         ],
       );
@@ -770,31 +633,19 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                 ? c.selectedType.value
                 : null,
             isExpanded: true,
-            decoration: _inputDecoration(
-              hint: 'Pilih jenis kerusakan jalan',
-              icon: Icons.broken_image_outlined,
-            ),
-            items: c.jenisKerusakan.map((type) {
-              return DropdownMenuItem<String>(
-                value: type,
-                child: Text(
-                  type,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: _dark,
-                    fontSize: 12,
+            decoration: _inputDecoration('Pilih jenis kerusakan'),
+            items: c.jenisKerusakan
+                .map(
+                  (type) => DropdownMenuItem<String>(
+                    value: type,
+                    child: Text(type, style: _text(12)),
                   ),
-                ),
-              );
-            }).toList(),
-            onChanged: (value) {
-              c.selectedType.value = value;
-            },
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Silakan pilih jenis kerusakan';
-              }
-              return null;
-            },
+                )
+                .toList(),
+            onChanged: (value) => c.selectedType.value = value,
+            validator: (value) => (value == null || value.isEmpty)
+                ? 'Pilih jenis kerusakan'
+                : null,
           ),
         ],
       );
@@ -805,9 +656,10 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     required String label,
     required TextEditingController controller,
     required String hint,
-    required IconData icon,
     required String? Function(String?) validator,
+    int minLines = 1,
     int maxLines = 1,
+    TextInputAction action = TextInputAction.next,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -815,12 +667,57 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         _label(label, required: true),
         TextFormField(
           controller: controller,
+          minLines: minLines,
           maxLines: maxLines,
-          style: GoogleFonts.plusJakartaSans(color: _dark, fontSize: 12),
-          decoration: _inputDecoration(hint: hint, icon: icon),
+          textInputAction: action,
+          textCapitalization: TextCapitalization.sentences,
+          style: _text(12),
+          decoration: _inputDecoration(hint),
           validator: validator,
         ),
       ],
+    );
+  }
+
+  Widget _buildFormCard() {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader('Data laporan'),
+          const SizedBox(height: 16),
+          _buildWilayahField(),
+          const SizedBox(height: 16),
+          _buildTypeField(),
+          const SizedBox(height: 16),
+          _buildTextField(
+            label: 'Judul',
+            controller: _controller.judulController,
+            hint: 'Contoh: Lubang besar di depan pasar',
+            validator: (value) {
+              final v = value?.trim() ?? '';
+              if (v.isEmpty) return 'Judul wajib diisi';
+              if (v.length < 5) return 'Judul minimal 5 karakter';
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            label: 'Deskripsi',
+            controller: _controller.deskripsiController,
+            hint: 'Ceritakan kondisi kerusakan dan patokan lokasinya',
+            minLines: 3,
+            maxLines: 5,
+            action: TextInputAction.newline,
+            validator: (value) {
+              final v = value?.trim() ?? '';
+              if (v.isEmpty) return 'Deskripsi wajib diisi';
+              if (v.length < 10) return 'Deskripsi minimal 10 karakter';
+              return null;
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -828,34 +725,38 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     return Obx(() {
       final c = _controller;
       final picked = c.pickedPoint.value ?? c.gpsPoint;
-
       final distance = const Distance().distance(c.gpsPoint, picked);
+      final maxShift = ReportFormController.maxShiftMeters.toStringAsFixed(0);
 
       return _card(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _sectionTitle(
-              'Lokasi Kerusakan',
-              'Ketuk peta untuk mengatur titik laporan',
-              Icons.location_on_outlined,
+            _sectionHeader(
+              'Lokasi kerusakan',
+              subtitle:
+                  'Ketuk peta untuk menggeser pin, maksimal $maxShift m dari titik GPS',
+              trailing: _chipButton(
+                label: 'Ke GPS',
+                onPressed: c.resetPoint,
+                icon: const Icon(Icons.my_location, size: 14),
+                color: _primary,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Container(
-              height: 260,
+              height: 240,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _border),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _line),
               ),
               child: FlutterMap(
                 mapController: c.mapController,
                 options: MapOptions(
                   initialCenter: c.gpsPoint,
                   initialZoom: 18,
-                  onTap: (tapPosition, point) {
-                    c.onMapTap(point);
-                  },
+                  onTap: (tapPosition, point) => c.onMapTap(point),
                 ),
                 children: [
                   TileLayer(
@@ -879,8 +780,8 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                     markers: [
                       Marker(
                         point: c.gpsPoint,
-                        width: 42,
-                        height: 42,
+                        width: 34,
+                        height: 34,
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -890,18 +791,19 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                           child: const Icon(
                             Icons.my_location,
                             color: _primary,
-                            size: 20,
+                            size: 17,
                           ),
                         ),
                       ),
                       Marker(
                         point: picked,
-                        width: 48,
-                        height: 48,
+                        width: 44,
+                        height: 44,
+                        alignment: Alignment.topCenter,
                         child: const Icon(
                           Icons.location_on,
-                          color: Color(0xFFDC2626),
-                          size: 43,
+                          color: _danger,
+                          size: 40,
                         ),
                       ),
                     ],
@@ -914,91 +816,172 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(13),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _border),
-              ),
-              child: Column(
-                children: [
-                  _roadInfoRow(
-                    Icons.gps_fixed,
-                    'Latitude',
-                    picked.latitude.toStringAsFixed(7),
-                  ),
-                  const SizedBox(height: 10),
-                  _roadInfoRow(
-                    Icons.gps_fixed,
-                    'Longitude',
-                    picked.longitude.toStringAsFixed(7),
-                  ),
-                  const SizedBox(height: 10),
-                  _roadInfoRow(
-                    Icons.social_distance_outlined,
-                    'Jarak dari GPS',
-                    '${distance.toStringAsFixed(1)} meter',
-                  ),
-                ],
-              ),
-            ),
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(Icons.info_outline, size: 17, color: _primary),
-                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Titik pin dibatasi maksimal 5 meter dari titik GPS.',
-                    style: _bodyStyle,
+                    '${picked.latitude.toStringAsFixed(6)}, ${picked.longitude.toStringAsFixed(6)}',
+                    style: _text(12, weight: FontWeight.w600),
                   ),
                 ),
+                Text('${distance.toStringAsFixed(1)} m dari GPS', style: _body),
               ],
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: c.resetPoint,
-                icon: const Icon(Icons.my_location, size: 18),
-                label: const Text('Kembali ke lokasi GPS'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: _primary,
-                  side: const BorderSide(color: _border),
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                ),
-              ),
             ),
           ],
         ),
-      ).animate().fadeIn(delay: 240.ms).slideY(begin: 0.06);
+      );
     });
   }
 
-  Future<void> _submitReport() async {
-    FocusScope.of(context).unfocus();
+  Widget _buildRoadCard() {
+    return Obx(() {
+      final c = _controller;
+      final checking = c.isCheckingRoad.value;
+      final error = c.roadCheckError.value;
+      final detected = c.roadDetected.value;
 
-    if (!_formKey.currentState!.validate()) return;
+      final jenis = (c.jenisJalanOSM.value ?? '').toLowerCase().trim();
+      final kewenangan = (c.kewenanganOSM.value ?? '').toLowerCase().trim();
+      final nama = (c.namaJalanOSM.value ?? '').trim();
+      final jarak = c.jarakJalanOSM.value;
+      final authority = _resolveAuthority(jenis, kewenangan);
 
-    try {
-      final reportData = await _controller.submitReport();
+      Widget body;
 
-      if (!mounted || reportData == null) return;
-      Get.off(() => ReportSuccessScreen(report: reportData));
-    } catch (e) {
-      if (!mounted) return;
+      if (checking) {
+        body = Row(
+          children: [
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: _primary),
+            ),
+            const SizedBox(width: 12),
+            Text('Memeriksa jalan di sekitar pin...', style: _body),
+          ],
+        );
+      } else if (error != null) {
+        body = _notice(
+          icon: Icons.cloud_off_outlined,
+          color: _warn,
+          title: 'Pemeriksaan belum selesai',
+          message: error,
+        );
+      } else if (detected == false) {
+        body = _notice(
+          icon: Icons.wrong_location_outlined,
+          color: const Color(0xFF64748B),
+          title: 'Jalan tidak ditemukan',
+          message:
+              c.penjelasanKewenangan.value ??
+              'Geser pin lebih dekat ke badan jalan, lalu periksa ulang.',
+        );
+      } else if (detected == true) {
+        body = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ..._withDividers([
+              _infoRow('Nama jalan', nama.isEmpty ? 'Belum tersedia' : nama),
+              _infoRow('Jenis jalan', _jenisJalanLabel(jenis)),
+              _infoRow('Penanggung jawab', _authorityLabel(authority)),
+              if (jarak != null)
+                _infoRow('Jarak pin ke jalan', '${jarak.toStringAsFixed(1)} m'),
+            ]),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(13),
+              decoration: BoxDecoration(
+                color: _fieldFill,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _line),
+              ),
+              child: Text(_authorityNote(authority), style: _body),
+            ),
+          ],
+        );
+      } else {
+        body = _notice(
+          icon: Icons.help_outline,
+          color: const Color(0xFF64748B),
+          title: 'Belum diperiksa',
+          message: 'Ketuk "Periksa ulang" untuk memeriksa jalan di pin.',
+        );
+      }
 
-      showAwesomeSnackbar(
-        title: 'Gagal Mengirim Laporan',
-        message: e.toString().replaceFirst('Exception: ', ''),
-        contentType: ContentType.failure,
+      return _card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionHeader(
+              'Informasi jalan',
+              subtitle: 'Perkiraan dari data OpenStreetMap di sekitar pin',
+              trailing: _chipButton(
+                label: 'Periksa ulang',
+                onPressed: checking
+                    ? null
+                    : () => c.checkRoad(c.pickedPoint.value ?? c.gpsPoint),
+                icon: const Icon(Icons.refresh_rounded, size: 15),
+                color: _primary,
+              ),
+            ),
+            const SizedBox(height: 14),
+            body,
+          ],
+        ),
       );
-    }
+    });
+  }
+
+  Widget _buildSubmitBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: _line)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: SafeArea(
+        top: false,
+        child: Obx(() {
+          final loading = _controller.isSubmitting.value;
+
+          return SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: loading ? null : _submitReport,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primary,
+                disabledBackgroundColor: _primary.withValues(alpha: 0.5),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: loading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      'Kirim laporan',
+                      style: _text(
+                        14,
+                        weight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
+          );
+        }),
+      ),
+    );
   }
 
   @override
@@ -1009,6 +992,9 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleSpacing: 0,
         leading: IconButton(
           onPressed: () => Get.back(),
           icon: const Icon(
@@ -1018,210 +1004,31 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
           ),
         ),
         title: Text(
-          'Detail Laporan',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            color: _dark,
-          ),
+          'Detail laporan',
+          style: _text(17, weight: FontWeight.w800),
         ),
-        centerTitle: true,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: _line),
+        ),
       ),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _primary.withValues(alpha: 0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.17),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: const Icon(
-                        Icons.assignment_outlined,
-                        color: Colors.white,
-                        size: 25,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Lengkapi Laporan',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            'Periksa data sebelum mengirim laporan jalan.',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.9),
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ).animate().fadeIn().slideY(begin: -0.06),
-              const SizedBox(height: 18),
-
-              _buildImageCard(),
-              const SizedBox(height: 15),
-
-              _buildDetectionCard(),
-              const SizedBox(height: 15),
-
-              _buildKewenanganCard(),
-              const SizedBox(height: 15),
-
-              _buildWawasanCard(),
-              const SizedBox(height: 15),
-
-              _buildTimeCard(),
-              const SizedBox(height: 22),
-
-              _card(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _sectionTitle(
-                      'Informasi Laporan',
-                      'Lengkapi informasi kerusakan jalan',
-                      Icons.edit_note_rounded,
-                    ),
-                    const SizedBox(height: 22),
-
-                    _buildWilayahField(),
-                    const SizedBox(height: 18),
-
-                    _buildTypeField(),
-                    const SizedBox(height: 18),
-
-                    _buildTextField(
-                      label: 'Judul laporan',
-                      controller: _controller.judulController,
-                      hint: 'Contoh: Jalan berlubang di jalan utama',
-                      icon: Icons.title_rounded,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Judul laporan wajib diisi';
-                        }
-                        if (value.trim().length < 5) {
-                          return 'Judul minimal 5 karakter';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 18),
-
-                    _buildTextField(
-                      label: 'Deskripsi kerusakan',
-                      controller: _controller.deskripsiController,
-                      hint: 'Jelaskan kondisi dan lokasi kerusakan...',
-                      icon: Icons.description_outlined,
-                      maxLines: 4,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Deskripsi wajib diisi';
-                        }
-                        if (value.trim().length < 10) {
-                          return 'Deskripsi minimal 10 karakter';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-              ).animate().fadeIn(delay: 280.ms).slideY(begin: 0.06),
-
-              const SizedBox(height: 15),
-              _buildMapCard(),
-              const SizedBox(height: 22),
-
-              Obx(() {
-                final loading = _controller.isSubmitting.value;
-
-                return SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: loading ? null : _submitReport,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _primary,
-                      disabledBackgroundColor: _primary.withValues(alpha: 0.5),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(17),
-                      ),
-                    ),
-                    child: loading
-                        ? const SizedBox(
-                            width: 23,
-                            height: 23,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.send_rounded, size: 19),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Kirim Laporan',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                );
-              }).animate().fadeIn(delay: 320.ms).slideY(begin: 0.08),
-
-              const SizedBox(height: 12),
-              Center(
-                child: Text(
-                  'Pastikan data yang kamu kirim sudah benar.',
-                  style: _bodyStyle,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          ),
+      bottomNavigationBar: _buildSubmitBar(),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          children: [
+            _buildPhoto(),
+            const SizedBox(height: 14),
+            _buildDetectionCard(),
+            const SizedBox(height: 14),
+            _buildFormCard(),
+            const SizedBox(height: 14),
+            _buildMapCard(),
+            const SizedBox(height: 14),
+            _buildRoadCard(),
+          ],
         ),
       ),
     );

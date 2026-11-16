@@ -1,23 +1,26 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
+
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:get/get.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:roadis/core/api_config.dart';
 import 'package:roadis/auth/services/session_storage.dart';
+import 'package:roadis/core/api_config.dart';
 import 'package:roadis/core/detection/models/detection_result.dart';
 import 'package:roadis/core/detection/services/detection_service.dart';
+import 'package:roadis/core/detection/services/groq_service.dart';
 import 'package:roadis/core/laporan/models/wilayah_model.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/utils/widgets/show_snackbar.dart';
+
 import './report_form_screen.dart';
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class ReportCameraScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -28,148 +31,127 @@ class ReportCameraScreen extends StatefulWidget {
   State<ReportCameraScreen> createState() => _ReportCameraScreenState();
 }
 
-class _ReportCameraScreenState extends State<ReportCameraScreen> {
+class _ReportCameraScreenState extends State<ReportCameraScreen>
+    with WidgetsBindingObserver {
   CameraController? _cameraController;
-  Future<void>? _initializeControllerFuture;
+  bool _isInitializingCamera = false;
 
   final DetectionService _detectionService = DetectionService();
 
+  /// 'yolo' (lokal) atau 'groq' (cloud)
+  String _selectedEngine = 'yolo';
+
   bool _isProcessing = false;
+  String _processingLabel = '';
   bool _modelLoaded = false;
   bool _isFlashOn = false;
   bool _isLoadingWilayah = false;
 
-  XFile? _image;
-  Position? _currentPosition;
-  DetectionResult? _bestDetection;
-
   List<WilayahModel> _wilayahList = [];
+
+  bool get _cameraReady =>
+      _cameraController != null && _cameraController!.value.isInitialized;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeCamera();
     _loadModel();
     _loadWilayah();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = _cameraController;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    if (state == AppLifecycleState.inactive) {
+      _cameraController = null;
+      controller.dispose();
+      if (mounted) setState(() => _isFlashOn = false);
+    } else if (state == AppLifecycleState.resumed) {
+      _initializeCamera();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+
+    final controller = _cameraController;
+    if (controller != null && controller.value.isInitialized) {
+      controller.setFlashMode(FlashMode.off).catchError((_) {});
+    }
+    controller?.dispose();
+    _detectionService.dispose();
+    super.dispose();
+  }
+
   Future<void> _initializeCamera() async {
+    if (_isInitializingCamera) return;
+    _isInitializingCamera = true;
+
     try {
       final cameras = await availableCameras();
-
-      if (cameras.isEmpty) {
-        throw Exception('Kamera tidak ditemukan.');
-      }
+      if (cameras.isEmpty) throw Exception('Kamera tidak ditemukan.');
 
       final camera = cameras.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.back,
+        (c) => c.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
 
-      _cameraController = CameraController(
+      final controller = CameraController(
         camera,
         ResolutionPreset.high,
         enableAudio: false,
       );
 
-      _initializeControllerFuture = _cameraController!.initialize();
-
-      await _initializeControllerFuture;
+      await controller.initialize();
 
       try {
-        await _cameraController!.setExposureOffset(0.5);
+        await controller.setExposureOffset(0.5);
       } catch (e) {
         debugPrint('Exposure tidak didukung: $e');
       }
 
-      if (mounted) {
-        setState(() {});
+      if (!mounted) {
+        await controller.dispose();
+        return;
       }
+
+      setState(() {
+        _cameraController = controller;
+        _isFlashOn = false;
+      });
     } catch (e) {
-      if (mounted) {
-        showAwesomeSnackbar(
-          title: 'Gagal',
-          message: 'Gagal mengakses kamera: $e',
-          contentType: ContentType.failure,
-        );
-      }
-    }
-  }
-
-  Future<void> _turnOffFlash() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return;
-    }
-
-    try {
-      await _cameraController!.setFlashMode(FlashMode.off);
-    } catch (e) {
-      debugPrint('Gagal matikan flash: $e');
-    }
-
-    if (mounted) {
-      setState(() => _isFlashOn = false);
-    }
-  }
-
-  Future<void> _toggleFlash() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return;
-    }
-
-    try {
-      if (_isFlashOn) {
-        await _cameraController!.setFlashMode(FlashMode.off);
-      } else {
-        await _cameraController!.setFlashMode(FlashMode.torch);
-      }
-
-      if (mounted) {
-        setState(() {
-          _isFlashOn = !_isFlashOn;
-        });
-      }
-    } catch (e) {
-      debugPrint('Flash tidak tersedia: $e');
-
-      if (mounted) {
-        showAwesomeSnackbar(
-          title: 'Flash',
-          message: 'Flash tidak tersedia pada kamera ini.',
-          contentType: ContentType.failure,
-        );
-      }
+      _showSnack(
+        'Kamera tidak bisa dibuka',
+        e.toString().replaceFirst('Exception: ', ''),
+        ContentType.failure,
+      );
+    } finally {
+      _isInitializingCamera = false;
     }
   }
 
   Future<void> _loadModel() async {
     try {
       await _detectionService.loadModel();
-
-      if (mounted) {
-        setState(() {
-          _modelLoaded = true;
-        });
-      }
+      if (mounted) setState(() => _modelLoaded = true);
     } catch (e) {
       debugPrint('Gagal load model: $e');
-
-      if (mounted) {
-        showAwesomeSnackbar(
-          title: 'Gagal',
-          message: 'Gagal load model deteksi kerusakan.',
-          contentType: ContentType.failure,
-        );
-      }
+      _showSnack(
+        'Model lokal gagal dimuat',
+        'Deteksi YOLO tidak tersedia. Coba mode Groq AI.',
+        ContentType.failure,
+      );
     }
   }
 
   Future<void> _loadWilayah() async {
     if (_isLoadingWilayah) return;
-
-    setState(() {
-      _isLoadingWilayah = true;
-    });
+    _isLoadingWilayah = true;
 
     try {
       final token = SessionStorage.getToken();
@@ -184,17 +166,11 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
           )
           .timeout(const Duration(seconds: 15));
 
-      debugPrint('GET WILAYAH STATUS: ${response.statusCode}');
-      debugPrint('GET WILAYAH BODY: ${response.body}');
-
       if (response.statusCode != 200) {
         throw Exception('Gagal mengambil wilayah (${response.statusCode})');
       }
 
-      final body = jsonDecode(response.body);
-
-      final data = body['data'];
-
+      final data = jsonDecode(response.body)['data'];
       if (data is! List) {
         throw Exception('Format data wilayah tidak valid.');
       }
@@ -203,7 +179,6 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
           .whereType<Map<String, dynamic>>()
           .map((json) {
             final idValue = json['id'] ?? json['ID'];
-
             final namaValue = json['nama'] ?? json['Nama'] ?? json['name'];
 
             return WilayahModel(
@@ -213,461 +188,559 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
               nama: namaValue?.toString() ?? '',
             );
           })
-          .where((wilayah) => wilayah.id != 0 && wilayah.nama.isNotEmpty)
+          .where((w) => w.id != 0 && w.nama.isNotEmpty)
           .toList();
 
-      if (mounted) {
-        setState(() {
-          _wilayahList = wilayah;
-        });
-      }
-
-      debugPrint('WILAYAH BERHASIL DIAMBIL: ${_wilayahList.length}');
+      if (mounted) setState(() => _wilayahList = wilayah);
     } catch (e) {
       debugPrint('Gagal mengambil wilayah: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingWilayah = false;
-        });
-      }
+      _isLoadingWilayah = false;
     }
   }
 
-  Future<void> _getLocation() async {
+  void _showSnack(String title, String message, ContentType type) {
+    if (!mounted) return;
+    showAwesomeSnackbar(title: title, message: message, contentType: type);
+  }
+
+  void _setProcessing(String label) {
+    if (mounted) setState(() => _processingLabel = label);
+  }
+
+  Future<void> _turnOffFlash() async {
+    final controller = _cameraController;
+    if (controller == null || !controller.value.isInitialized) return;
+
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-
-      if (!serviceEnabled) {
-        showAwesomeSnackbar(
-          title: 'Lokasi',
-          message: 'Aktifkan GPS terlebih dahulu.',
-          contentType: ContentType.failure,
-        );
-        return;
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        showAwesomeSnackbar(
-          title: 'Lokasi',
-          message: 'Izin lokasi diperlukan.',
-          contentType: ContentType.failure,
-        );
-        return;
-      }
-
-      _currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+      await controller.setFlashMode(FlashMode.off);
     } catch (e) {
-      debugPrint('Gagal mendapatkan lokasi: $e');
+      debugPrint('Gagal matikan flash: $e');
     }
+
+    if (mounted) setState(() => _isFlashOn = false);
+  }
+
+  Future<void> _toggleFlash() async {
+    final controller = _cameraController;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    try {
+      await controller.setFlashMode(
+        _isFlashOn ? FlashMode.off : FlashMode.torch,
+      );
+      if (mounted) setState(() => _isFlashOn = !_isFlashOn);
+    } catch (e) {
+      debugPrint('Flash tidak tersedia: $e');
+      _showSnack(
+        'Flash',
+        'Flash tidak tersedia di kamera ini.',
+        ContentType.failure,
+      );
+    }
+  }
+
+  Future<Position> _getLocation() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      throw Exception('GPS belum aktif. Aktifkan GPS lalu coba lagi.');
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.denied) {
+      throw Exception('Izin lokasi dibutuhkan untuk mengirim laporan.');
+    }
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception(
+        'Izin lokasi ditolak permanen. Aktifkan lewat pengaturan aplikasi.',
+      );
+    }
+
+    try {
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 20),
+      );
+    } on TimeoutException {
+      throw Exception(
+        'Titik GPS belum didapat. Coba lagi di tempat yang lebih terbuka.',
+      );
+    }
+  }
+
+  /// Menjalankan deteksi sesuai mesin yang dipilih.
+  /// Mengembalikan hasil terbaik dan gambar yang ditampilkan di form
+  /// (gambar beranotasi untuk YOLO, gambar asli untuk Groq).
+  Future<(DetectionResult?, XFile)> _detect(
+    Uint8List bytes,
+    XFile original,
+  ) async {
+    if (_selectedEngine == 'groq') {
+      try {
+        return (await GroqService.detectRoadDamage(bytes), original);
+      } catch (e) {
+        debugPrint('Groq detection error: $e');
+        if (!_modelLoaded) rethrow;
+        _showSnack(
+          'Groq tidak bisa dipakai',
+          'Deteksi dialihkan ke model lokal.',
+          ContentType.help,
+        );
+      }
+    }
+
+    if (!_modelLoaded) return (null, original);
+
+    final detections = await _detectionService.detect(bytes);
+    if (detections.isEmpty) return (null, original);
+
+    final annotated = _detectionService.drawDetections(bytes, detections);
+    final path = '${original.path}_det.jpg';
+    await File(path).writeAsBytes(annotated);
+
+    return (detections.first, XFile(path));
   }
 
   Future<void> _takePicture() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return;
-    }
-
+    final controller = _cameraController;
+    if (controller == null || !controller.value.isInitialized) return;
     if (_isProcessing) return;
 
+    HapticFeedback.mediumImpact();
     setState(() {
       _isProcessing = true;
+      _processingLabel = 'Mengambil foto...';
     });
 
     try {
-      await _initializeControllerFuture;
+      final wilayahFuture = _wilayahList.isEmpty ? _loadWilayah() : null;
 
-      if (_wilayahList.isEmpty) {
-        await _loadWilayah();
-      }
-
-      final image = await _cameraController!.takePicture();
-
+      final image = await controller.takePicture();
       await _turnOffFlash();
 
-      await _getLocation();
+      _setProcessing('Mencari titik GPS...');
+      final position = await _getLocation();
 
-      if (_currentPosition == null) {
-        throw Exception('Lokasi tidak berhasil didapatkan.');
-      }
+      _setProcessing(
+        _selectedEngine == 'groq'
+            ? 'Menganalisis dengan Groq AI...'
+            : 'Menganalisis dengan YOLO...',
+      );
+      final bytes = await image.readAsBytes();
+      final (detection, displayImage) = await _detect(bytes, image);
 
-      DetectionResult? bestDetection;
-      XFile displayImage = image;
-
-      if (_modelLoaded) {
-        final imageBytes = await image.readAsBytes();
-
-        final detections = await _detectionService.detect(imageBytes);
-
-        if (detections.isNotEmpty) {
-          bestDetection = detections.first;
-
-          final annotated = _detectionService.drawDetections(
-            imageBytes,
-            detections,
-          );
-
-          final path = '${image.path}_det.jpg';
-
-          await File(path).writeAsBytes(annotated);
-
-          displayImage = XFile(path);
-        }
-      }
-
-      _image = image;
-      _bestDetection = bestDetection;
-
+      await wilayahFuture;
       if (!mounted) return;
 
       await Get.to(
         () => ReportFormScreen(
           image: displayImage,
-          position: _currentPosition!,
-          detection: bestDetection,
+          rawImage: image,
+          position: position,
+          detection: detection,
           wilayahList: _wilayahList,
         ),
       );
     } catch (e) {
-      if (mounted) {
-        showAwesomeSnackbar(
-          title: 'Gagal',
-          message: e.toString().replaceFirst('Exception: ', ''),
-          contentType: ContentType.failure,
-        );
-      }
+      _showSnack(
+        'Foto belum bisa diproses',
+        e.toString().replaceFirst('Exception: ', ''),
+        ContentType.failure,
+      );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-      }
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
-  @override
-  void dispose() {
-    if (_cameraController != null && _cameraController!.value.isInitialized) {
-      _cameraController!.setFlashMode(FlashMode.off);
+  Widget _buildPreview() {
+    final controller = _cameraController;
+
+    if (controller == null || !controller.value.isInitialized) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
     }
 
-    _cameraController?.dispose();
-    _detectionService.dispose();
-    super.dispose();
+    // Preview kamera berorientasi landscape, jadi lebar & tinggi ditukar.
+    final size = controller.value.previewSize!;
+
+    return ClipRect(
+      child: FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: size.height,
+          height: size.width,
+          child: CameraPreview(controller),
+        ),
+      ),
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
+  Widget _roundButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool active = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: active
+              ? AppColors.primaryColor
+              : Colors.black.withValues(alpha: 0.4),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 21),
+      ),
+    );
+  }
+
+  Widget _buildHeader(double topInset) {
+    return Positioned(
+      top: topInset + 12,
+      left: 16,
+      right: 16,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _roundButton(
+                icon: Icons.arrow_back_ios_new_rounded,
+                onTap: () {
+                  if (widget.onBack != null) {
+                    widget.onBack!();
+                  } else {
+                    Get.back();
+                  }
+                },
+              ),
+              Expanded(
+                child: Text(
+                  'Foto kerusakan jalan',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              _roundButton(
+                icon: _isFlashOn
+                    ? Icons.flash_on_rounded
+                    : Icons.flash_off_rounded,
+                onTap: _toggleFlash,
+                active: _isFlashOn,
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Arahkan kamera ke bagian jalan yang rusak',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFrame(EdgeInsets inset) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            40,
+            inset.top + 110,
+            40,
+            inset.bottom + 230,
+          ),
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: 0.85,
+              child: CustomPaint(
+                painter: _FramePainter(
+                  _isProcessing ? AppColors.primaryColor : Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _engineButton({
+    required String id,
+    required String label,
+    required IconData icon,
+  }) {
+    final selected = _selectedEngine == id;
+
+    return GestureDetector(
+      onTap: () {
+        if (_isProcessing) return;
+        setState(() => _selectedEngine = id);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primaryColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // CAMERA
-            Positioned.fill(
-              child:
-                  _cameraController != null &&
-                      _initializeControllerFuture != null
-                  ? FutureBuilder(
-                      future: _initializeControllerFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.done) {
-                          return CameraPreview(
-                            _cameraController!,
-                          ).animate().fadeIn(duration: 600.ms);
-                        }
-
-                        return const Center(
-                          child: CircularProgressIndicator(color: Colors.white),
-                        );
-                      },
-                    )
-                  : const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    ),
+            Icon(
+              icon,
+              size: 16,
+              color: selected ? Colors.white : Colors.white70,
             ),
-
-            // GRADIENT OVERLAY
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.65),
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.75),
-                      ],
-                    ),
-                  ),
-                ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: selected ? Colors.white : Colors.white70,
               ),
             ),
-
-            // HEADER
-            Positioned(
-              top: 16,
-              left: 16,
-              right: 16,
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      if (widget.onBack != null) {
-                        widget.onBack!();
-                      } else {
-                        Get.back();
-                      }
-                    },
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.35),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      'Laporkan Kerusakan',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: _toggleFlash,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: _isFlashOn
-                            ? AppColors.primaryColor
-                            : Colors.black.withOpacity(0.35),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _isFlashOn
-                            ? Icons.flash_on_rounded
-                            : Icons.flash_off_rounded,
-                        color: Colors.white,
-                        size: 21,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.2, end: 0),
-
-            // TITLE
-            Positioned(
-                  top: 95,
-                  left: 24,
-                  right: 24,
-                  child: Column(
-                    children: [
-                      Text(
-                        'Deteksi Kerusakan Jalan',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Arahkan kamera ke bagian jalan yang rusak',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          color: Colors.white70,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-                .animate()
-                .fadeIn(delay: 150.ms, duration: 600.ms)
-                .slideY(begin: -0.15, end: 0),
-
-            // CAMERA FRAME
-            // CAMERA FRAME
-            Center(
-                  child: SizedBox(
-                    width: 280,
-                    height: 360,
-                    child: Stack(
-                      children: [
-                        Positioned(top: 0, left: 0, child: _corner()),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: Transform.rotate(
-                            angle: math.pi / 2,
-                            child: _corner(),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          child: Transform.rotate(
-                            angle: -math.pi / 2,
-                            child: _corner(),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Transform.rotate(
-                            angle: math.pi,
-                            child: _corner(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .animate()
-                .fadeIn(delay: 300.ms, duration: 700.ms)
-                .scale(
-                  begin: const Offset(0.92, 0.92),
-                  end: const Offset(1, 1),
-                ),
-
-            // AI STATUS
-            Positioned(
-                  left: 24,
-                  right: 24,
-                  bottom: 130,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.45),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white.withOpacity(0.15)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          _modelLoaded
-                              ? Icons.auto_awesome
-                              : Icons.hourglass_top,
-                          color: _modelLoaded
-                              ? AppColors.primaryColor
-                              : AppColors.orangeColor,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _modelLoaded
-                                ? 'AI YOLO11s siap mendeteksi kerusakan'
-                                : 'Menyiapkan AI YOLO11s...',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .animate()
-                .fadeIn(delay: 450.ms, duration: 500.ms)
-                .slideY(begin: 0.2, end: 0),
-
-            // BUTTON
-            Positioned(
-                  left: 24,
-                  right: 24,
-                  bottom: 30,
-                  child: SizedBox(
-                    height: 58,
-                    child: ElevatedButton(
-                      onPressed: _isProcessing ? null : _takePicture,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
-                        disabledBackgroundColor: AppColors.greyColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: _isProcessing
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.camera_alt_rounded,
-                                  color: Colors.white,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  'Ambil Foto & Deteksi',
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
-                  ),
-                )
-                .animate()
-                .fadeIn(delay: 600.ms, duration: 500.ms)
-                .slideY(begin: 0.25, end: 0),
           ],
         ),
       ),
     );
   }
 
-  Widget _corner() {
-    return SizedBox(
-      width: 42,
-      height: 42,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(color: AppColors.whiteColor, width: 4),
-            left: BorderSide(color: AppColors.whiteColor, width: 4),
+  Widget _buildEngineSelector() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _engineButton(
+            id: 'yolo',
+            label: 'YOLO11s Lokal',
+            icon: Icons.memory_rounded,
+          ),
+          const SizedBox(width: 4),
+          _engineButton(
+            id: 'groq',
+            label: 'Groq Cloud',
+            icon: Icons.cloud_outlined,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusLine() {
+    final isGroq = _selectedEngine == 'groq';
+    final ready = isGroq || _modelLoaded;
+
+    final text = isGroq
+        ? 'Groq Vision siap, butuh koneksi internet'
+        : (_modelLoaded
+              ? 'Model lokal siap, bisa dipakai tanpa internet'
+              : 'Memuat model lokal...');
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: ready ? const Color(0xFF4ADE80) : AppColors.orangeColor,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShutter() {
+    final enabled = _cameraReady && !_isProcessing;
+
+    return GestureDetector(
+      onTap: enabled ? _takePicture : null,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 180),
+        opacity: enabled ? 1 : 0.45,
+        child: Container(
+          width: 78,
+          height: 78,
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 4),
+          ),
+          child: const DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
     );
   }
+
+  Widget _buildBottomPanel(double bottomInset) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 0, 20, bottomInset + 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildEngineSelector(),
+            const SizedBox(height: 12),
+            _buildStatusLine(),
+            const SizedBox(height: 20),
+            _buildShutter(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProcessingOverlay() {
+    return Positioned.fill(
+      child: AbsorbPointer(
+        child: ColoredBox(
+          color: Colors.black.withValues(alpha: 0.55),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 34,
+                  height: 34,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _processingLabel,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final inset = MediaQuery.of(context).padding;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            _buildPreview(),
+            const IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xB3000000),
+                      Color(0x00000000),
+                      Color(0x00000000),
+                      Color(0xD9000000),
+                    ],
+                    stops: [0, 0.25, 0.55, 1],
+                  ),
+                ),
+              ),
+            ),
+            _buildFrame(inset),
+            _buildHeader(inset.top),
+            _buildBottomPanel(inset.bottom),
+            if (_isProcessing) _buildProcessingOverlay(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Bingkai bidik dengan sudut membulat.
+class _FramePainter extends CustomPainter {
+  final Color color;
+
+  const _FramePainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const len = 38.0;
+    const r = 18.0;
+    final w = size.width;
+    final h = size.height;
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path()
+      // kiri atas
+      ..moveTo(0, len)
+      ..lineTo(0, r)
+      ..arcToPoint(const Offset(r, 0), radius: const Radius.circular(r))
+      ..lineTo(len, 0)
+      // kanan atas
+      ..moveTo(w - len, 0)
+      ..lineTo(w - r, 0)
+      ..arcToPoint(Offset(w, r), radius: const Radius.circular(r))
+      ..lineTo(w, len)
+      // kanan bawah
+      ..moveTo(w, h - len)
+      ..lineTo(w, h - r)
+      ..arcToPoint(Offset(w - r, h), radius: const Radius.circular(r))
+      ..lineTo(w - len, h)
+      // kiri bawah
+      ..moveTo(len, h)
+      ..lineTo(r, h)
+      ..arcToPoint(Offset(0, h - r), radius: const Radius.circular(r))
+      ..lineTo(0, h - len);
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_FramePainter old) => old.color != color;
 }

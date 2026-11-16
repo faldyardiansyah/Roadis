@@ -296,9 +296,9 @@ class _ChatScreenState extends State<ChatScreen> {
     } else if (jj == 'kabupaten' || kw.contains('kabupaten') || kw.contains('pu')) {
       adminTitle = 'Admin Dinas PU';
     } else if (jj == 'provinsi' || kw.contains('provinsi')) {
-      adminTitle = 'Admin Provinsi';
-    } else if (jj == 'nasional' || kw.contains('nasional')) {
-      adminTitle = 'Admin Nasional';
+      adminTitle = 'Admin Dinas PU / Superadmin';
+    } else if (jj == 'nasional' || kw.contains('nasional') || kw.contains('pusat')) {
+      adminTitle = 'Admin Dinas PU / Superadmin';
     }
 
     return Container(

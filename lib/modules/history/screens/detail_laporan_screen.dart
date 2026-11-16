@@ -591,19 +591,13 @@ Widget _buildInfoCard() {
                     markers: [
                       Marker(
                         point: point,
-                        width: 50,
-                        height: 50,
+                        width: 48,
+                        height: 48,
                         alignment: Alignment.topCenter,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.redColor.withOpacity(0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.location_on,
-                            color: AppColors.redColor,
-                            size: 40,
-                          ),
+                        child: const Icon(
+                          Icons.location_on,
+                          color: Color(0xFFDC2626),
+                          size: 43,
                         ),
                       ),
                     ],

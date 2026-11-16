@@ -35,7 +35,7 @@ class _SuccessReportAnimationState
           onLoaded: (composition) {
             if (!_playedHaptic) {
               _playedHaptic = true;
-              HapticFeedback.lightImpact();
+              HapticFeedback.vibrate();
             }
           },
         ),

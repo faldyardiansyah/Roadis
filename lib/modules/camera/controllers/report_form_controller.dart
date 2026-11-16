@@ -96,16 +96,19 @@ class ReportFormController extends GetxController {
     gpsPoint = LatLng(position.latitude, position.longitude);
     pickedPoint.value = gpsPoint;
 
-    // isi otomatis kalau ai yakin dan waktu masih bagus
-    final confident =
-        detection != null && detection.confidence >= 0.8 && isGoodTime;
+    // isi otomatis kalau ai yakin (akurat >= 80% / 0.8)
+    final confident = detection != null && detection.confidence >= 0.8;
     final name = confident ? detection.displayName : null;
 
     selectedType.value = name;
-    judulController.text = name != null ? 'Kerusakan $name' : '';
-    deskripsiController.text = name != null
-        ? 'Ditemukan $name pada jalan.'
-        : '';
+    if (name != null) {
+      judulController.text = 'Laporan Kerusakan $name';
+      deskripsiController.text =
+          'Ditemukan kondisi kerusakan jalan berupa $name dengan tingkat keyakinan AI ${(detection!.confidence * 100).toStringAsFixed(1)}%. Mohon tindak lanjut dari pihak terkait.';
+    } else {
+      judulController.text = '';
+      deskripsiController.text = '';
+    }
 
     // cari wilayah dan periksa jalan dari titik gps
     detectWilayah(gpsPoint);
@@ -128,6 +131,19 @@ class ReportFormController extends GetxController {
       )
       .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
+
+  void updateDetection(DetectionResult? newDetection) {
+    detection = newDetection;
+    if (newDetection != null && newDetection.confidence >= 0.8) {
+      final name = newDetection.displayName;
+      selectedType.value = name;
+      judulController.text = 'Laporan Kerusakan $name';
+      deskripsiController.text =
+          'Ditemukan kondisi kerusakan jalan berupa $name dengan tingkat keyakinan AI ${(newDetection.confidence * 100).toStringAsFixed(1)}%. Mohon tindak lanjut dari pihak terkait.';
+    } else if (newDetection != null) {
+      selectedType.value = newDetection.displayName;
+    }
+  }
 
   // cari nama wilayah dari koordinat, lalu cocokin ke daftar wilayah
   Future<void> detectWilayah(LatLng point) async {
@@ -292,17 +308,17 @@ class ReportFormController extends GetxController {
         case 'trunk':
         case 'trunk_link':
         case 'nasional':
-          kewenanganOSM.value = 'Pemerintah Pusat (Nasional)';
+          kewenanganOSM.value = 'Pemerintah Pusat (Nasional RI / PUPR)';
           penjelasanKewenangan.value =
-              'Ruas jalan nasional yang menjadi wewenang Kementerian PUPR / Pemerintah Pusat.';
+              'Ruas jalan nasional kewenangan Pemerintah Pusat / Kementerian PUPR RI. Di tingkat lokal, laporan tetap dimonitor dan diteruskan oleh Dinas PU Kab. Indramayu.';
           break;
 
         case 'primary':
         case 'primary_link':
         case 'provinsi':
-          kewenanganOSM.value = 'Pemerintah Provinsi';
+          kewenanganOSM.value = 'Pemerintah Provinsi (Jawa Barat)';
           penjelasanKewenangan.value =
-              'Ruas jalan arteri/kolektor primer di bawah kewenangan Dinas Bina Marga Provinsi.';
+              'Ruas jalan provinsi kewenangan Dinas Bina Marga Provinsi Jawa Barat. Di tingkat lokal, laporan tetap dimonitor dan dikoordinasikan oleh Dinas PU Kab. Indramayu.';
           break;
 
         case 'secondary':
@@ -310,9 +326,9 @@ class ReportFormController extends GetxController {
         case 'tertiary':
         case 'tertiary_link':
         case 'kabupaten':
-          kewenanganOSM.value = 'Pemerintah Kabupaten';
+          kewenanganOSM.value = 'Pemerintah Kabupaten (Kab. Indramayu)';
           penjelasanKewenangan.value =
-              'Ruas jalan kabupaten di bawah kewenangan Dinas Pekerjaan Umum (DPUPR) Kabupaten.';
+              'Ruas jalan kabupaten di bawah kewenangan teknis Dinas Pekerjaan Umum (DPUPR) Kabupaten Indramayu.';
           break;
 
         case 'residential':
@@ -329,9 +345,9 @@ class ReportFormController extends GetxController {
           break;
 
         default:
-          kewenanganOSM.value = 'Pemerintah Kabupaten';
+          kewenanganOSM.value = 'Belum dapat dipastikan';
           penjelasanKewenangan.value =
-              'Ruas jalan berada di bawah pantauan dan tindak lanjut Pemerintah Kabupaten.';
+              'Tipe jalan berhasil ditemukan dari OpenStreetMap, instansi penanggung jawab resmi akan diverifikasi oleh admin.';
       }
     } on TimeoutException {
       if (seq != _roadCheckSeq) return;
