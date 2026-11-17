@@ -9,8 +9,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:photo_view/photo_view.dart';
 
 import 'package:roadis/core/detection/models/detection_result.dart';
+import 'package:roadis/core/detection/services/detection_service.dart';
 import 'package:roadis/core/detection/services/groq_service.dart';
 import 'package:roadis/core/laporan/models/wilayah_model.dart';
 import 'package:roadis/modules/camera/controllers/report_form_controller.dart';
@@ -19,7 +21,6 @@ import 'package:roadis/utils/widgets/show_snackbar.dart';
 
 import '../presentation/report_succes_screen.dart';
 
-/// Perkiraan pihak yang bertanggung jawab atas ruas jalan.
 enum _Authority { pusat, provinsi, kabupaten, desa, unknown }
 
 class ReportFormScreen extends StatefulWidget {
@@ -28,6 +29,7 @@ class ReportFormScreen extends StatefulWidget {
   final Position position;
   final DetectionResult? detection;
   final List<WilayahModel> wilayahList;
+  final bool isUsingGroq;
 
   const ReportFormScreen({
     super.key,
@@ -35,7 +37,8 @@ class ReportFormScreen extends StatefulWidget {
     this.rawImage,
     required this.position,
     this.detection,
-    this.wilayahList = const [],
+    required this.wilayahList,
+    this.isUsingGroq = false,
   });
 
   @override
@@ -47,23 +50,27 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
   late final ReportFormController _controller;
   late final String _controllerTag;
+  late final DetectionService _detectionService;
 
   DetectionResult? _currentDetection;
-  bool _isSwitchingToGroq = false;
+  late XFile _currentImage;
 
-  // Warna
+  bool _isUsingGroq = false;
+  bool _isSwitchingDetection = false;
+  bool? _switchingToGroq;
+
   static const Color _primary = AppColors.primaryColor;
   static const Color _dark = AppColors.darkTextColor;
   static const Color _muted = AppColors.greyColor;
   static const Color _background = AppColors.backgroundColor;
-  static const Color _line = Color(0xFFE2E8F0);
-  static const Color _fieldFill = Color(0xFFF8FAFC);
-  static const Color _ok = Color(0xFF16A34A);
-  static const Color _warn = Color(0xFFD97706);
-  static const Color _danger = Color(0xFFDC2626);
-  static const Color _info = Color(0xFF0284C7);
+  static const Color _line = Color(0xFFE5EDF4);
+  static const Color _fieldFill = Color(0xFFF5F9FC);
+  static const Color _ok = Color(0xFF168B68);
+  static const Color _warn = Color(0xFFD58B25);
+  static const Color _danger = Color(0xFFDC5656);
+  static const Color _info = Color(0xFF168BCE);
+  static const Color _softBlue = Color(0xFFEAF6FD);
 
-  // Pemetaan tipe jalan OSM / nilai kewenangan -> penanggung jawab
   static const _pusatTypes = {
     'nasional',
     'trunk',
@@ -71,7 +78,9 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     'motorway',
     'motorway_link',
   };
+
   static const _provinsiTypes = {'provinsi', 'primary', 'primary_link'};
+
   static const _desaTypes = {
     'desa',
     'residential',
@@ -82,6 +91,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     'path',
     'road',
   };
+
   static const _kabupatenTypes = {
     'kabupaten',
     'secondary',
@@ -95,6 +105,11 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     super.initState();
 
     _currentDetection = widget.detection;
+    _currentImage = widget.image;
+    _isUsingGroq = widget.isUsingGroq;
+
+    _detectionService = DetectionService();
+
     _controllerTag = 'report_form_${DateTime.now().microsecondsSinceEpoch}';
     _controller = Get.put(ReportFormController(), tag: _controllerTag);
 
@@ -108,49 +123,225 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
   @override
   void dispose() {
+    _detectionService.dispose();
     Get.delete<ReportFormController>(tag: _controllerTag);
     super.dispose();
   }
 
   Future<void> _switchDetectionToGroq() async {
-    if (_isSwitchingToGroq) return;
+    if (_isSwitchingDetection || _isUsingGroq) return;
 
-    setState(() => _isSwitchingToGroq = true);
+    setState(() {
+      _isSwitchingDetection = true;
+      _switchingToGroq = true;
+    });
 
     try {
       final source = widget.rawImage ?? widget.image;
       final bytes = await source.readAsBytes();
+
+      if (!mounted) return;
+
+      showAwesomeSnackbar(
+        title: 'Sedang menganalisis foto',
+        message: 'Mohon tunggu sebentar, Groq AI sedang memeriksa foto kamu.',
+        contentType: ContentType.help,
+      );
+
       final result = await GroqService.detectRoadDamage(bytes);
 
       if (!mounted) return;
 
-      if (result != null) {
-        setState(() => _currentDetection = result);
-        _controller.updateDetection(result);
+      setState(() {
+        _currentImage = source;
+        _currentDetection = result;
+        _isUsingGroq = true;
+      });
 
+      _controller.updateImage(source);
+      _controller.updateDetection(result);
+
+      if (result != null) {
         showAwesomeSnackbar(
-          title: 'Deteksi Groq AI berhasil',
+          title: 'Analisis berhasil',
           message:
-              'Terdeteksi: ${result.displayName} (${(result.confidence * 100).toStringAsFixed(1)}%)',
+              'Foto berhasil dianalisis. Terindikasi ${result.displayName} dengan tingkat keyakinan ${(result.confidence * 100).toStringAsFixed(1)}%.',
           contentType: ContentType.success,
         );
       } else {
         showAwesomeSnackbar(
-          title: 'Groq AI',
-          message: 'Groq tidak menemukan pola kerusakan yang spesifik.',
+          title: 'Analisis selesai',
+          message: 'Belum terlihat kerusakan yang dapat dikenali. Kamu tetap bisa memilih jenis kerusakan secara manual.',
           contentType: ContentType.help,
         );
       }
     } catch (e) {
       if (!mounted) return;
+
       showAwesomeSnackbar(
-        title: 'Groq AI gagal dipakai',
+        title: 'Analisis belum berhasil',
+        message: 'Groq AI belum dapat memeriksa foto. Periksa koneksi internet lalu coba lagi.',
+        contentType: ContentType.failure,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSwitchingDetection = false;
+          _switchingToGroq = null;
+        });
+      }
+    }
+  }
+
+  Future<void> _selectYolo() async {
+    if (_isSwitchingDetection || !_isUsingGroq) return;
+
+    setState(() {
+      _isSwitchingDetection = true;
+      _switchingToGroq = false;
+    });
+
+    try {
+      final source = widget.rawImage ?? widget.image;
+      final bytes = await source.readAsBytes();
+
+      if (!mounted) return;
+
+      showAwesomeSnackbar(
+        title: 'Sedang menganalisis foto',
+        message: 'Mohon tunggu sebentar, YOLO sedang memeriksa foto kamu.',
+        contentType: ContentType.help,
+      );
+
+      await _detectionService.loadModel();
+
+      final detections = await _detectionService.detect(bytes);
+
+      if (!mounted) return;
+
+      DetectionResult? result;
+      XFile displayImage = source;
+
+      if (detections.isNotEmpty) {
+        result = detections.first;
+
+        final annotatedBytes = _detectionService.drawDetections(
+          bytes,
+          detections,
+        );
+
+        final annotatedPath =
+            '${source.path}_yolo_${DateTime.now().microsecondsSinceEpoch}.jpg';
+
+        await File(annotatedPath).writeAsBytes(annotatedBytes);
+
+        displayImage = XFile(annotatedPath);
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _currentImage = displayImage;
+        _currentDetection = result;
+        _isUsingGroq = false;
+      });
+
+      _controller.updateImage(displayImage);
+      _controller.updateDetection(result);
+
+      if (result != null) {
+        showAwesomeSnackbar(
+          title: 'Deteksi berhasil',
+          message:
+              'YOLO berhasil menemukan ${result.displayName}. Kotak penanda sudah ditampilkan pada foto.',
+          contentType: ContentType.success,
+        );
+      } else {
+        showAwesomeSnackbar(
+          title: 'Pemeriksaan selesai',
+          message: 'YOLO belum menemukan kerusakan pada foto. Kamu bisa memilih jenis kerusakan secara manual.',
+          contentType: ContentType.help,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      showAwesomeSnackbar(
+        title: 'Deteksi belum berhasil',
         message: e.toString().replaceFirst('Exception: ', ''),
         contentType: ContentType.failure,
       );
     } finally {
-      if (mounted) setState(() => _isSwitchingToGroq = false);
+      if (mounted) {
+        setState(() {
+          _isSwitchingDetection = false;
+          _switchingToGroq = null;
+        });
+      }
     }
+  }
+
+  void _showPhotoPreview() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.black,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: PhotoView(
+                  imageProvider: FileImage(File(_currentImage.path)),
+                  backgroundDecoration: const BoxDecoration(
+                    color: Colors.black,
+                  ),
+                  minScale: PhotoViewComputedScale.contained,
+                  initialScale: PhotoViewComputedScale.contained,
+                  maxScale: PhotoViewComputedScale.covered * 3,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Center(
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        color: Colors.white,
+                        size: 45,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Positioned(
+                top: 35,
+                right: 15,
+                child: IconButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 25,
+                left: 0,
+                right: 0,
+                child: Text(
+                  'Cubit foto untuk memperbesar',
+                  textAlign: TextAlign.center,
+                  style: _text(
+                    12,
+                    color: Colors.white,
+                    weight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _submitReport() async {
@@ -170,7 +361,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       if (!mounted) return;
 
       showAwesomeSnackbar(
-        title: 'Laporan gagal dikirim',
+        title: 'Laporan belum terkirim',
         message: e.toString().replaceFirst('Exception: ', ''),
         contentType: ContentType.failure,
       );
@@ -186,17 +377,21 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         _pusatTypes.contains(jenis)) {
       return _Authority.pusat;
     }
+
     if (has('provinsi') || has('jabar') || _provinsiTypes.contains(jenis)) {
       return _Authority.provinsi;
     }
+
     if (has('pemdes') || has('desa') || _desaTypes.contains(jenis)) {
       return _Authority.desa;
     }
+
     if (has('kabupaten') ||
         has('dinas pu') ||
         _kabupatenTypes.contains(jenis)) {
       return _Authority.kabupaten;
     }
+
     return _Authority.unknown;
   }
 
@@ -290,15 +485,22 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
   Widget _card({
     required Widget child,
-    EdgeInsetsGeometry padding = const EdgeInsets.all(16),
+    EdgeInsetsGeometry padding = const EdgeInsets.all(17),
   }) {
     return Container(
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _line),
+        borderRadius: BorderRadius.circular(21),
+        border: Border.all(color: _line.withValues(alpha: 0.8)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF315C78).withValues(alpha: 0.045),
+            blurRadius: 18,
+            offset: const Offset(0, 7),
+          ),
+        ],
       ),
       child: child,
     );
@@ -314,7 +516,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
             children: [
               Text(title, style: _text(14, weight: FontWeight.w800)),
               if (subtitle != null) ...[
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(subtitle, style: _body),
               ],
             ],
@@ -371,14 +573,14 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
   InputDecoration _inputDecoration(String hint) {
     OutlineInputBorder border(Color color, [double width = 1]) {
       return OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(13),
         borderSide: BorderSide(color: color, width: width),
       );
     }
 
     return InputDecoration(
       hintText: hint,
-      hintStyle: _text(12, color: const Color(0xFF94A3B8)),
+      hintStyle: _text(12, color: const Color(0xFF9AAEBC)),
       errorStyle: _text(11, color: _danger),
       filled: true,
       fillColor: _fieldFill,
@@ -402,7 +604,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(13),
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
@@ -459,40 +661,263 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     return out;
   }
 
+  Widget _buildIntro() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 19, 14, 19),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFE4F4FD), Color(0xFFD3ECFA)],
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 6,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bantu perbaiki\nkondisi jalan.',
+                  style: _text(
+                    19,
+                    weight: FontWeight.w800,
+                    color: _dark,
+                  ).copyWith(height: 1.3),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  'Sampaikan temuan kerusakan agar dapat segera ditindaklanjuti.',
+                  style: _text(11, color: const Color(0xFF58758A), height: 1.5),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.65),
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: const Icon(
+              Icons.add_road_rounded,
+              size: 42,
+              color: Color(0xFF168BCE),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetectionOption({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool selected,
+    required bool loading,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: Material(
+        color: selected ? _softBlue : Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        child: InkWell(
+          onTap: loading || _isSwitchingDetection ? null : onTap,
+          borderRadius: BorderRadius.circular(15),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.fromLTRB(12, 13, 10, 13),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: selected ? _primary : _line,
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, color: _primary, size: 23),
+                    const Spacer(),
+                    if (loading)
+                      const SizedBox(
+                        width: 17,
+                        height: 17,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: _primary,
+                        ),
+                      )
+                    else
+                      Icon(
+                        selected
+                            ? Icons.check_circle_rounded
+                            : Icons.circle_outlined,
+                        color: selected ? _primary : const Color(0xFFCBD5DF),
+                        size: 19,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 11),
+                Text(title, style: _text(13, weight: FontWeight.w800)),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: _text(10, color: _muted),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (loading) ...[
+                  const SizedBox(height: 7),
+                  Text(
+                    'Sedang menganalisis...',
+                    style: _text(9, color: _primary, weight: FontWeight.w700),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetectionSelector() {
+    return _card(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: _primary, size: 20),
+              const SizedBox(width: 9),
+              Text('Metode deteksi', style: _text(14, weight: FontWeight.w800)),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text(
+            'Pilih teknologi yang ingin digunakan untuk menganalisis foto.',
+            style: _body,
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _buildDetectionOption(
+                title: 'YOLO',
+                subtitle: 'Deteksi model lokal',
+                icon: Icons.center_focus_strong_rounded,
+                selected: !_isUsingGroq,
+                loading: _isSwitchingDetection && _switchingToGroq == false,
+                onTap: _selectYolo,
+              ),
+              const SizedBox(width: 10),
+              _buildDetectionOption(
+                title: 'Groq AI',
+                subtitle: 'Analisis gambar',
+                icon: Icons.psychology_alt_rounded,
+                selected: _isUsingGroq,
+                loading: _isSwitchingDetection && _switchingToGroq == true,
+                onTap: _switchDetectionToGroq,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPhoto() {
     final now = _controller.waktu;
     String two(int n) => n.toString().padLeft(2, '0');
+
     final stamp =
-        '${two(now.day)}/${two(now.month)}/${now.year}, ${two(now.hour)}:${two(now.minute)} WIB';
+        '${two(now.day)}/${two(now.month)}/${now.year} • ${two(now.hour)}:${two(now.minute)} WIB';
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(21),
       child: Stack(
         children: [
-          Image.file(
-            File(widget.image.path),
-            width: double.infinity,
-            height: 230,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              height: 230,
-              color: _line,
-              alignment: Alignment.center,
-              child: const Icon(Icons.image_not_supported_outlined, size: 38),
+          GestureDetector(
+            onTap: _showPhotoPreview,
+            child: Image.file(
+              File(_currentImage.path),
+              key: ValueKey(_currentImage.path),
+              width: double.infinity,
+              height: 225,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                height: 225,
+                color: _line,
+                alignment: Alignment.center,
+                child: const Icon(Icons.image_not_supported_outlined, size: 38),
+              ),
             ),
           ),
           Positioned(
-            left: 10,
-            bottom: 10,
+            top: 12,
+            right: 12,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
+                color: const Color(0xDD172B3A),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(
-                stamp,
-                style: _text(11, weight: FontWeight.w600, color: Colors.white),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.zoom_in_rounded,
+                    color: Colors.white,
+                    size: 15,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Perbesar',
+                    style: _text(
+                      10,
+                      color: Colors.white,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 12,
+            bottom: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xDD172B3A),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.access_time_rounded,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    stamp,
+                    style: _text(
+                      10,
+                      color: Colors.white,
+                      weight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -513,62 +938,121 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionHeader(
-            'Hasil deteksi AI',
-            subtitle: d == null
-                ? 'Belum ada hasil deteksi'
-                : 'Rekomendasi awal, tetap periksa lagi',
-            trailing: _chipButton(
-              label: _isSwitchingToGroq ? 'Memproses...' : 'Pakai Groq AI',
-              onPressed: _isSwitchingToGroq ? null : _switchDetectionToGroq,
-              icon: _isSwitchingToGroq
-                  ? const SizedBox(
-                      width: 13,
-                      height: 13,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: _info,
-                      ),
-                    )
-                  : const Icon(Icons.psychology_outlined, size: 15),
-            ),
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: _softBlue,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const Icon(
+                  Icons.analytics_outlined,
+                  color: _primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hasil deteksi',
+                      style: _text(14, weight: FontWeight.w800),
+                    ),
+                    Text(
+                      _isUsingGroq ? 'Analisis Groq AI' : 'Analisis YOLO',
+                      style: _text(10, color: _muted),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _softBlue,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  _isUsingGroq ? 'GROQ AI' : 'YOLO',
+                  style: _text(9, weight: FontWeight.w800, color: _primary),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 17),
           if (d == null)
-            Text(
-              'Pilih jenis kerusakan secara manual di formulir, atau coba deteksi dengan Groq AI.',
-              style: _body,
+            _notice(
+              icon: Icons.info_outline_rounded,
+              color: _warn,
+              title: 'Belum ada hasil deteksi',
+              message: 'Belum ditemukan kerusakan yang dapat dikenali. Kamu tetap bisa memilih jenis kerusakan secara manual.',
             )
           else ...[
             Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                  child: Text(
-                    d.displayName,
-                    style: _text(17, weight: FontWeight.w800),
+                Container(
+                  width: 62,
+                  height: 62,
+                  decoration: BoxDecoration(
+                    color: _softBlue,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: const Icon(
+                    Icons.warning_amber_rounded,
+                    color: _primary,
+                    size: 32,
                   ),
                 ),
-                Text(
-                  '${(confidence * 100).toStringAsFixed(1)}%',
-                  style: _text(17, weight: FontWeight.w800, color: barColor),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        d.displayName,
+                        style: _text(17, weight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 3),
+                      Text('Jenis kerusakan terdeteksi', style: _body),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${(confidence * 100).toStringAsFixed(1)}%',
+                      style: _text(
+                        21,
+                        weight: FontWeight.w800,
+                        color: barColor,
+                      ),
+                    ),
+                    Text('Keyakinan', style: _text(9, color: _muted)),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
             ClipRRect(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(10),
               child: LinearProgressIndicator(
                 value: confidence,
-                minHeight: 6,
+                minHeight: 7,
                 backgroundColor: _line,
                 color: barColor,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              strong ? 'Tingkat keyakinan tinggi.' : 'Keyakinan belum tinggi. Pastikan jenis kerusakannya sesuai dengan foto.',
+              strong
+                  ? 'Tingkat keyakinan tinggi. Tetap periksa kembali hasil deteksi.'
+                  : 'Tingkat keyakinan belum tinggi. Pastikan jenis kerusakan sesuai foto.',
               style: _body,
             ),
           ],
@@ -684,8 +1168,11 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionHeader('Data laporan'),
-          const SizedBox(height: 16),
+          _sectionHeader(
+            'Informasi laporan',
+            subtitle: 'Lengkapi detail kerusakan yang ditemukan.',
+          ),
+          const SizedBox(height: 18),
           _buildWilayahField(),
           const SizedBox(height: 16),
           _buildTypeField(),
@@ -733,9 +1220,9 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _sectionHeader(
-              'Lokasi kerusakan',
+              'Titik lokasi laporan',
               subtitle:
-                  'Ketuk peta untuk menggeser pin, maksimal $maxShift m dari titik GPS',
+                  'Geser pin pada peta. Maksimal $maxShift m dari titik GPS.',
               trailing: _chipButton(
                 label: 'Ke GPS',
                 onPressed: c.resetPoint,
@@ -745,10 +1232,10 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
             ),
             const SizedBox(height: 14),
             Container(
-              height: 240,
+              height: 235,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(15),
                 border: Border.all(color: _line),
               ),
               child: FlutterMap(
@@ -819,10 +1306,16 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
+                const Icon(
+                  Icons.location_on_outlined,
+                  color: _primary,
+                  size: 17,
+                ),
+                const SizedBox(width: 5),
                 Expanded(
                   child: Text(
                     '${picked.latitude.toStringAsFixed(6)}, ${picked.longitude.toStringAsFixed(6)}',
-                    style: _text(12, weight: FontWeight.w600),
+                    style: _text(10, weight: FontWeight.w600),
                   ),
                 ),
                 Text('${distance.toStringAsFixed(1)} m dari GPS', style: _body),
@@ -894,7 +1387,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
               padding: const EdgeInsets.all(13),
               decoration: BoxDecoration(
                 color: _fieldFill,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(13),
                 border: Border.all(color: _line),
               ),
               child: Text(_authorityNote(authority), style: _body),
@@ -915,8 +1408,8 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _sectionHeader(
-              'Informasi jalan',
-              subtitle: 'Perkiraan dari data OpenStreetMap di sekitar pin',
+              'Informasi ruas jalan',
+              subtitle: 'Data jalan berdasarkan OpenStreetMap.',
               trailing: _chipButton(
                 label: 'Periksa ulang',
                 onPressed: checking
@@ -936,9 +1429,16 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
   Widget _buildSubmitBar() {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: _line)),
+        border: const Border(top: BorderSide(color: _line)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF315C78).withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: SafeArea(
@@ -948,7 +1448,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
           return SizedBox(
             width: double.infinity,
-            height: 52,
+            height: 54,
             child: ElevatedButton(
               onPressed: loading ? null : _submitReport,
               style: ElevatedButton.styleFrom(
@@ -957,7 +1457,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
               child: loading
@@ -969,13 +1469,22 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : Text(
-                      'Kirim laporan',
-                      style: _text(
-                        14,
-                        weight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.send_rounded, size: 18),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Kirim laporan',
+                          style: _text(
+                            14,
+                            weight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 7),
+                        const Icon(Icons.arrow_forward_rounded, size: 18),
+                      ],
                     ),
             ),
           );
@@ -1007,6 +1516,37 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
           'Detail laporan',
           style: _text(17, weight: FontWeight.w800),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: _softBlue,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.circle, color: _primary, size: 8),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Draft',
+                      style: _text(
+                        10,
+                        weight: FontWeight.w800,
+                        color: _primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(height: 1, color: _line),
@@ -1017,16 +1557,20 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         key: _formKey,
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 17, 16, 26),
           children: [
+            _buildIntro(),
+            const SizedBox(height: 17),
+            _buildDetectionSelector(),
+            const SizedBox(height: 17),
             _buildPhoto(),
             const SizedBox(height: 14),
             _buildDetectionCard(),
-            const SizedBox(height: 14),
+            const SizedBox(height: 17),
             _buildFormCard(),
-            const SizedBox(height: 14),
+            const SizedBox(height: 17),
             _buildMapCard(),
-            const SizedBox(height: 14),
+            const SizedBox(height: 17),
             _buildRoadCard(),
           ],
         ),

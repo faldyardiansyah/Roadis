@@ -17,34 +17,27 @@ import 'package:roadis/core/laporan/models/wilayah_model.dart';
 import 'package:camera/camera.dart';
 
 class ReportFormController extends GetxController {
-  // data dari kamera
   late XFile image;
   late Position position;
   DetectionResult? detection;
   List<WilayahModel> wilayahList = [];
 
-  // controller buat input form
   late final TextEditingController judulController;
   late final TextEditingController deskripsiController;
 
-  // titik asli gps dan titik pin yang dipilih
   late final LatLng gpsPoint;
   final pickedPoint = Rxn<LatLng>();
   final MapController mapController = MapController();
   final Distance distance = const Distance();
 
-  // jam saat laporan dibuat
   final DateTime waktu = DateTime.now();
 
-  // status proses biar tombol dan kartu bisa menampilkan loading
   final isSubmitting = false.obs;
   final isCheckingRoad = false.obs;
 
-  // data pilihan di form
   final selectedType = Rxn<String>();
   final selectedWilayahId = Rxn<int>();
 
-  // hasil pemeriksaan jalan dari osm
   final roadDetected = Rxn<bool>();
   final jarakJalanOSM = Rxn<double>();
   final namaJalanOSM = Rxn<String>();
@@ -52,9 +45,8 @@ class ReportFormController extends GetxController {
   final kewenanganOSM = Rxn<String>();
   final penjelasanKewenangan = Rxn<String>();
   final roadCheckError = Rxn<String>();
-  int _roadCheckSeq = 0; // penanda pengecekan terbaru
+  int _roadCheckSeq = 0;
 
-  // daftar jenis kerusakan
   final List<String> jenisKerusakan = [
     'Retak Buaya',
     'Retak Tepi',
@@ -67,13 +59,10 @@ class ReportFormController extends GetxController {
 
   static const double maxShiftMeters = 1000;
 
-  // pagi sampai siang (06:00-14:59) = ai paling bagus
   bool get isGoodTime => waktu.hour >= 6 && waktu.hour < 15;
 
-  // sore (15:00-17:59) = mulai kurang bagus
   bool get isEvening => waktu.hour >= 15 && waktu.hour < 18;
 
-  // format jam biar dua digit
   String _two(int n) => n.toString().padLeft(2, '0');
 
   String get jamText => '${_two(waktu.hour)}:${_two(waktu.minute)}';
@@ -81,7 +70,6 @@ class ReportFormController extends GetxController {
   String get tanggalText =>
       '${_two(waktu.day)}/${_two(waktu.month)}/${waktu.year}';
 
-  // siapkan data awal saat form dibuka
   void initialize({
     required XFile image,
     required Position position,
@@ -96,11 +84,11 @@ class ReportFormController extends GetxController {
     gpsPoint = LatLng(position.latitude, position.longitude);
     pickedPoint.value = gpsPoint;
 
-    // isi otomatis kalau ai yakin (akurat >= 80% / 0.8)
     final confident = detection != null && detection.confidence >= 0.8;
     final name = confident ? detection.displayName : null;
 
     selectedType.value = name;
+
     if (name != null) {
       judulController.text = 'Laporan Kerusakan $name';
       deskripsiController.text =
@@ -110,7 +98,6 @@ class ReportFormController extends GetxController {
       deskripsiController.text = '';
     }
 
-    // cari wilayah dan periksa jalan dari titik gps
     detectWilayah(gpsPoint);
     checkRoad(gpsPoint);
   }
@@ -122,7 +109,13 @@ class ReportFormController extends GetxController {
     deskripsiController = TextEditingController();
   }
 
-  // buang kata kabupaten/kota/dll biar nama gampang dicocokin
+  @override
+  void onClose() {
+    judulController.dispose();
+    deskripsiController.dispose();
+    super.onClose();
+  }
+
   String _norm(String s) => s
       .toLowerCase()
       .replaceAll(
@@ -132,20 +125,27 @@ class ReportFormController extends GetxController {
       .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
 
+  void updateImage(XFile newImage) {
+    image = newImage;
+  }
+
   void updateDetection(DetectionResult? newDetection) {
     detection = newDetection;
+
     if (newDetection != null && newDetection.confidence >= 0.8) {
       final name = newDetection.displayName;
+
       selectedType.value = name;
       judulController.text = 'Laporan Kerusakan $name';
       deskripsiController.text =
           'Ditemukan kondisi kerusakan jalan berupa $name dengan tingkat keyakinan AI ${(newDetection.confidence * 100).toStringAsFixed(1)}%. Mohon tindak lanjut dari pihak terkait.';
-    } else if (newDetection != null) {
-      selectedType.value = newDetection.displayName;
+    } else {
+      selectedType.value = newDetection?.displayName;
+      judulController.clear();
+      deskripsiController.clear();
     }
   }
 
-  // cari nama wilayah dari koordinat, lalu cocokin ke daftar wilayah
   Future<void> detectWilayah(LatLng point) async {
     if (wilayahList.isEmpty) return;
 
@@ -165,7 +165,7 @@ class ReportFormController extends GetxController {
         m.administrativeArea,
       ].whereType<String>().map(_norm).where((e) => e.isNotEmpty).toList();
 
-      debugPrint('Geocode: $candidates'); // lihat ini buat nyocokin nama
+      debugPrint('Geocode: $candidates');
 
       for (final w in wilayahList) {
         final name = _norm(w.nama);
@@ -181,7 +181,6 @@ class ReportFormController extends GetxController {
     }
   }
 
-  // kalau titik di luar zona, tempel ke tepi lingkaran
   LatLng clampToZone(LatLng point) {
     final d = distance.distance(gpsPoint, point);
     if (d <= maxShiftMeters) return point;
@@ -190,17 +189,14 @@ class ReportFormController extends GetxController {
     return distance.offset(gpsPoint, maxShiftMeters, bearing);
   }
 
-  // pin pindah ke titik yang diketuk (maksimal di tepi zona)
   void onMapTap(LatLng point) {
     final clamped = clampToZone(point);
     pickedPoint.value = clamped;
 
-    // periksa ulang wilayah dan jalan di titik pin
     detectWilayah(clamped);
     checkRoad(clamped);
   }
 
-  // balikin pin ke titik gps
   void resetPoint() {
     pickedPoint.value = gpsPoint;
     mapController.move(gpsPoint, 20);
@@ -208,14 +204,12 @@ class ReportFormController extends GetxController {
     checkRoad(gpsPoint);
   }
 
-  // Periksa jalan terdekat melalui API backend.
   Future<void> checkRoad(LatLng point) async {
     final seq = ++_roadCheckSeq;
 
     isCheckingRoad.value = true;
     roadCheckError.value = null;
 
-    // Bersihkan hasil pemeriksaan sebelumnya.
     roadDetected.value = null;
     namaJalanOSM.value = null;
     jenisJalanOSM.value = null;
@@ -245,12 +239,10 @@ class ReportFormController extends GetxController {
           .get(uri, headers: headers)
           .timeout(const Duration(seconds: 30));
 
-      // Abaikan respons dari pemeriksaan yang sudah lama.
       if (seq != _roadCheckSeq) return;
 
       debugPrint(
-        'CEK JALAN #$seq HTTP ${response.statusCode}: '
-        '${response.body}',
+        'CEK JALAN #$seq HTTP ${response.statusCode}: ${response.body}',
       );
 
       dynamic body;
@@ -259,14 +251,12 @@ class ReportFormController extends GetxController {
         body = jsonDecode(response.body);
       } catch (_) {
         throw Exception(
-          'Respons server bukan JSON '
-          '(HTTP ${response.statusCode}).',
+          'Respons server bukan JSON (HTTP ${response.statusCode}).',
         );
       }
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final message = body is Map ? body['message']?.toString() : null;
-
         throw Exception(message ?? 'HTTP ${response.statusCode}');
       }
 
@@ -275,7 +265,6 @@ class ReportFormController extends GetxController {
       }
 
       final data = Map<String, dynamic>.from(body['data'] as Map);
-
       final detected = data['terdeteksi'] == true;
 
       roadDetected.value = detected;
@@ -290,7 +279,6 @@ class ReportFormController extends GetxController {
       }
 
       namaJalanOSM.value = data['nama_jalan']?.toString();
-
       jenisJalanOSM.value = data['jenis_jalan']?.toString() ?? 'belum_pasti';
 
       final jarak = data['jarak_meter'];
@@ -299,7 +287,6 @@ class ReportFormController extends GetxController {
           ? jarak.toDouble()
           : double.tryParse(jarak?.toString() ?? '');
 
-      // Jenis highway OSM / jenis jalan hasil deteksi backend
       final highway = (jenisJalanOSM.value ?? '').trim().toLowerCase();
 
       switch (highway) {
@@ -309,16 +296,14 @@ class ReportFormController extends GetxController {
         case 'trunk_link':
         case 'nasional':
           kewenanganOSM.value = 'Pemerintah Pusat (Nasional RI / PUPR)';
-          penjelasanKewenangan.value =
-              'Ruas jalan nasional kewenangan Pemerintah Pusat / Kementerian PUPR RI. Di tingkat lokal, laporan tetap dimonitor dan diteruskan oleh Dinas PU Kab. Indramayu.';
+          penjelasanKewenangan.value = 'Ruas jalan nasional kewenangan Pemerintah Pusat / Kementerian PUPR RI. Di tingkat lokal, laporan tetap dimonitor dan diteruskan oleh Dinas PU Kab. Indramayu.';
           break;
 
         case 'primary':
         case 'primary_link':
         case 'provinsi':
           kewenanganOSM.value = 'Pemerintah Provinsi (Jawa Barat)';
-          penjelasanKewenangan.value =
-              'Ruas jalan provinsi kewenangan Dinas Bina Marga Provinsi Jawa Barat. Di tingkat lokal, laporan tetap dimonitor dan dikoordinasikan oleh Dinas PU Kab. Indramayu.';
+          penjelasanKewenangan.value = 'Ruas jalan provinsi kewenangan Dinas Bina Marga Provinsi Jawa Barat. Di tingkat lokal, laporan tetap dimonitor dan dikoordinasikan oleh Dinas PU Kab. Indramayu.';
           break;
 
         case 'secondary':
@@ -327,8 +312,7 @@ class ReportFormController extends GetxController {
         case 'tertiary_link':
         case 'kabupaten':
           kewenanganOSM.value = 'Pemerintah Kabupaten (Kab. Indramayu)';
-          penjelasanKewenangan.value =
-              'Ruas jalan kabupaten di bawah kewenangan teknis Dinas Pekerjaan Umum (DPUPR) Kabupaten Indramayu.';
+          penjelasanKewenangan.value = 'Ruas jalan kabupaten di bawah kewenangan teknis Dinas Pekerjaan Umum (DPUPR) Kabupaten Indramayu.';
           break;
 
         case 'residential':
@@ -340,29 +324,24 @@ class ReportFormController extends GetxController {
         case 'path':
         case 'desa':
           kewenanganOSM.value = 'Pemerintah Desa (Pemdes)';
-          penjelasanKewenangan.value =
-              'Ruas jalan lingkungan/permukiman desa di bawah kewenangan Pemerintah Desa setempat.';
+          penjelasanKewenangan.value = 'Ruas jalan lingkungan/permukiman desa di bawah kewenangan Pemerintah Desa setempat.';
           break;
 
         default:
           kewenanganOSM.value = 'Belum dapat dipastikan';
-          penjelasanKewenangan.value =
-              'Tipe jalan berhasil ditemukan dari OpenStreetMap, instansi penanggung jawab resmi akan diverifikasi oleh admin.';
+          penjelasanKewenangan.value = 'Tipe jalan berhasil ditemukan dari OpenStreetMap, instansi penanggung jawab resmi akan diverifikasi oleh admin.';
       }
     } on TimeoutException {
       if (seq != _roadCheckSeq) return;
 
       roadDetected.value = null;
-      roadCheckError.value =
-          'Server terlalu lama merespons. '
-          'Silakan periksa ulang beberapa saat lagi.';
+      roadCheckError.value = 'Server terlalu lama merespons. Silakan periksa ulang beberapa saat lagi.';
     } on SocketException {
       if (seq != _roadCheckSeq) return;
 
       roadDetected.value = null;
       roadCheckError.value =
-          'Tidak dapat terhubung ke server. '
-          'Periksa koneksi jaringan Anda.';
+          'Tidak dapat terhubung ke server. Periksa koneksi jaringan Anda.';
     } catch (e) {
       if (seq != _roadCheckSeq) return;
 
@@ -377,22 +356,19 @@ class ReportFormController extends GetxController {
     }
   }
 
-  // Kirim laporan ke backend Go dan simpan melalui API.
   Future<Map<String, dynamic>?> submitReport() async {
     if (isSubmitting.value) return null;
 
-    // Validasi sesi login.
     final token = SessionStorage.getToken()?.trim();
 
     if (token == null || token.isEmpty) {
-      throw Exception('Sesi login habis. Silakan login kembali.');
+      throw Exception('Sesi login kamu sudah berakhir. Silakan login kembali.');
     }
 
-    // Validasi data laporan.
     final wilayahId = selectedWilayahId.value;
 
     if (wilayahId == null) {
-      throw Exception('Silakan pilih wilayah laporan.');
+      throw Exception('Silakan pilih wilayah tempat kerusakan ditemukan.');
     }
 
     final judul = judulController.text.trim();
@@ -400,28 +376,25 @@ class ReportFormController extends GetxController {
     final tipe = selectedType.value?.trim();
 
     if (judul.isEmpty) {
-      throw Exception('Judul laporan wajib diisi.');
+      throw Exception('Judul laporan belum diisi.');
     }
 
     if (deskripsi.isEmpty) {
-      throw Exception('Deskripsi laporan wajib diisi.');
+      throw Exception('Deskripsi laporan belum diisi.');
     }
 
     if (tipe == null || tipe.isEmpty) {
-      throw Exception('Silakan pilih jenis kerusakan.');
+      throw Exception('Silakan pilih jenis kerusakan jalan.');
     }
 
     if (await image.length() == 0) {
-      throw Exception('Foto laporan kosong. Silakan foto ulang.');
+      throw Exception('Foto laporan kosong. Silakan ambil foto kembali.');
     }
 
     isSubmitting.value = true;
 
     try {
-      // Gunakan titik pin yang dipilih pengguna.
       final point = pickedPoint.value ?? gpsPoint;
-
-      // Pastikan ApiConfig.baseUrl sudah mencakup /api.
       final uri = Uri.parse('${ApiConfig.baseUrl}/warga/laporan');
 
       final request = http.MultipartRequest('POST', uri);
@@ -440,7 +413,6 @@ class ReportFormController extends GetxController {
         'longitude': point.longitude.toString(),
       });
 
-      // Backend Go membaca foto dengan c.FormFile("foto").
       request.files.add(await http.MultipartFile.fromPath('foto', image.path));
 
       debugPrint('KIRIM LAPORAN: $uri');
@@ -460,23 +432,24 @@ class ReportFormController extends GetxController {
         body = jsonDecode(response.body);
       } catch (_) {
         throw Exception(
-          'Respons server tidak valid. HTTP ${response.statusCode}.',
+          'Server memberikan respons yang belum bisa dibaca. '
+          'Silakan coba beberapa saat lagi.',
         );
       }
 
-      // Jangan menganggap request berhasil jika HTTP gagal.
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final message = body is Map ? body['message']?.toString() : null;
 
-        throw Exception(message ?? 'Gagal mengirim laporan ke server.');
+        throw Exception(
+          message ?? 'Laporan belum berhasil dikirim. Silakan coba lagi.',
+        );
       }
 
-      // Backend harus mengembalikan status success.
       if (body is! Map || body['status'] != 'success') {
         final message = body is Map ? body['message']?.toString() : null;
 
         throw Exception(
-          message ?? 'Server belum mengonfirmasi laporan berhasil.',
+          message ?? 'Laporan belum dikonfirmasi berhasil oleh server.',
         );
       }
 
@@ -486,17 +459,15 @@ class ReportFormController extends GetxController {
         throw Exception('Data laporan tidak ditemukan dalam respons server.');
       }
 
-      // Kembalikan data asli dari server untuk halaman sukses.
       return Map<String, dynamic>.from(data);
     } on TimeoutException {
       throw Exception(
-        'Waktu pengiriman habis. Periksa riwayat laporan '
-        'sebelum mencoba mengirim ulang.',
+        'Pengiriman membutuhkan waktu terlalu lama. '
+        'Periksa riwayat laporan sebelum mencoba mengirim ulang.',
       );
     } on SocketException {
       throw Exception(
-        'Tidak dapat terhubung ke server. Periksa jaringan '
-        'dan alamat IP backend.',
+        'Tidak dapat terhubung ke server. Periksa koneksi internet kamu.',
       );
     } catch (e) {
       debugPrint('GAGAL KIRIM LAPORAN: $e');

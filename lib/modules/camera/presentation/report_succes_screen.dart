@@ -66,10 +66,10 @@ class ReportSuccessScreen extends StatelessWidget {
                   height: 54,
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      Get.back();
+                      Get.offAllNamed('/main');
                     },
                     icon: const Icon(Icons.check_rounded),
-                    label: const Text('Selesai'),
+                    label: const Text('Kembali ke Beranda'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0284C7),
                       foregroundColor: Colors.white,

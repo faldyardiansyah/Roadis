@@ -1,10 +1,11 @@
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'routes/app_routes.dart';
 import 'routes/app_pages.dart';
-
-import 'package:get_storage/get_storage.dart';
 
 import 'auth/controllers/auth_controller.dart';
 import 'auth/services/session_storage.dart';
@@ -15,11 +16,16 @@ import 'package:roadis/modules/notification/services/notification_polling_servic
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load(fileName: '.env');
+
   await GetStorage.init();
   await LocalNotificationService.initialize();
 
   NotificationPollingService.instance.start();
+
   Get.put(AuthController(), permanent: true);
+
   await LocationService.checkAndRequestLocation();
 
   final token = SessionStorage.getToken();

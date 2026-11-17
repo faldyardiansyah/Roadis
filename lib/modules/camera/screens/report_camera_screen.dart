@@ -342,6 +342,7 @@ class _ReportCameraScreenState extends State<ReportCameraScreen>
           position: position,
           detection: detection,
           wilayahList: _wilayahList,
+          isUsingGroq: _selectedEngine == 'groq',
         ),
       );
     } catch (e) {
