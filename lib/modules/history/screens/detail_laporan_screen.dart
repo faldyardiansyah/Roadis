@@ -727,6 +727,7 @@ Widget _buildInfoCard() {
                   laporanId: laporan.id,
                   jenisJalan: laporan.jenisJalan,
                   kewenanganJalan: laporan.kewenanganJalan,
+                  wilayahNama: laporan.wilayahNama,
                 ),
                 transition: Transition.rightToLeft,
                 duration: 300.ms,

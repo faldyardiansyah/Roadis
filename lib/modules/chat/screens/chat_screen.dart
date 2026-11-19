@@ -3,7 +3,7 @@ import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:roadis/utils/app_colors.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 import '../controllers/chat_controller.dart';
 import '../models/chat_message_model.dart';
 
@@ -11,12 +11,14 @@ class ChatScreen extends StatefulWidget {
   final int laporanId;
   final String? jenisJalan;
   final String? kewenanganJalan;
+  final String? wilayahNama;
 
   const ChatScreen({
     super.key,
     required this.laporanId,
     this.jenisJalan,
     this.kewenanganJalan,
+    this.wilayahNama,
   });
 
   @override
@@ -230,27 +232,56 @@ class _ChatScreenState extends State<ChatScreen> {
                 onSend: _kirimPesan,
 
                 messageOptions: MessageOptions(
-                  currentUserContainerColor: AppColors.primaryColor,
+                  currentUserContainerColor: const Color(0xFF0284C7),
                   containerColor: Colors.white,
                   currentUserTextColor: Colors.white,
                   textColor: const Color(0xFF1E293B),
                   showTime: true,
-                  messagePadding: const EdgeInsets.all(12),
+                  timeFontSize: 10,
+                  messagePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   borderRadius: 18,
+                  showOtherUsersAvatar: true,
+                  showCurrentUserAvatar: false,
+                  avatarBuilder: (user, onPressAvatar, onLongPressAvatar) {
+                    return Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      width: 32,
+                      height: 32,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE0F2FE),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.admin_panel_settings_rounded,
+                          size: 18,
+                          color: Color(0xFF0284C7),
+                        ),
+                      ),
+                    );
+                  },
                 ),
 
                 inputOptions: InputOptions(
                   inputDecoration: InputDecoration(
-                    hintText: 'Tulis pesan di sini...',
+                    hintText: 'Tulis pesan Anda untuk admin...',
+                    hintStyle: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      color: const Color(0xFF94A3B8),
+                    ),
                     filled: true,
-                    fillColor: const Color(0xFFF1F5F9),
+                    fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 18,
                       vertical: 12,
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(26),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(26),
+                      borderSide: const BorderSide(color: Color(0xFF0284C7), width: 1.5),
                     ),
                   ),
                   sendButtonBuilder: (send) {
@@ -258,17 +289,19 @@ class _ChatScreenState extends State<ChatScreen> {
                       padding: const EdgeInsets.only(
                         left: 8,
                         right: 4,
-                        bottom: 4,
+                        bottom: 2,
                       ),
                       child:
                           IconButton(
                                 onPressed: send,
                                 style: IconButton.styleFrom(
-                                  backgroundColor: AppColors.primaryColor,
+                                  backgroundColor: const Color(0xFF0284C7),
                                   foregroundColor: Colors.white,
-                                  minimumSize: const Size(48, 48),
+                                  minimumSize: const Size(44, 44),
+                                  elevation: 2,
+                                  shadowColor: const Color(0x400284C7),
                                 ),
-                                icon: const Icon(Icons.send_rounded),
+                                icon: const Icon(Icons.send_rounded, size: 20),
                               )
                               .animate()
                               .fadeIn(duration: 250.ms)
@@ -289,41 +322,69 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildHeader() {
     String adminTitle = 'Layanan Admin';
+    String adminSubtitle = 'Laporan #JK-${widget.laporanId}';
+
+    // Cari tahu nama admin spesifik dari pesan balasan yang sudah masuk (jika ada)
+    String? namaAdminDariPesan;
+    for (final m in _controller.messages) {
+      if (m.namaAdmin != null && m.namaAdmin!.trim().isNotEmpty) {
+        namaAdminDariPesan = m.namaAdmin!.trim();
+        break;
+      }
+    }
+
     final jj = (widget.jenisJalan ?? '').toLowerCase().trim();
     final kw = (widget.kewenanganJalan ?? '').toLowerCase().trim();
-    if (jj == 'desa' || kw.contains('pemdes') || kw.contains('desa')) {
-      adminTitle = 'Admin Pemdes';
-    } else if (jj == 'kabupaten' || kw.contains('kabupaten') || kw.contains('pu')) {
-      adminTitle = 'Admin Dinas PU';
-    } else if (jj == 'provinsi' || kw.contains('provinsi')) {
-      adminTitle = 'Admin Dinas PU / Superadmin';
-    } else if (jj == 'nasional' || kw.contains('nasional') || kw.contains('pusat')) {
-      adminTitle = 'Admin Dinas PU / Superadmin';
+    final wilayah = (widget.wilayahNama ?? '').trim();
+
+    if (namaAdminDariPesan != null) {
+      adminTitle = namaAdminDariPesan;
+      if (jj == 'desa' || kw.contains('pemdes') || kw.contains('desa')) {
+        adminSubtitle = wilayah.isNotEmpty ? 'Pemerintah Desa $wilayah' : 'Admin Pemdes';
+      } else if (jj == 'kabupaten' || kw.contains('kabupaten') || kw.contains('pu')) {
+        adminSubtitle = 'Dinas PUPR Kab. Indramayu';
+      } else {
+        adminSubtitle = 'Admin Pengelola Laporan';
+      }
+    } else {
+      if (jj == 'desa' || kw.contains('pemdes') || kw.contains('desa')) {
+        adminTitle = wilayah.isNotEmpty ? 'Admin Desa $wilayah' : 'Admin Pemdes';
+        adminSubtitle = 'Pemerintah Desa • #JK-${widget.laporanId}';
+      } else if (jj == 'kabupaten' || kw.contains('kabupaten') || kw.contains('pu')) {
+        adminTitle = 'Admin Dinas PU Kab. Indramayu';
+        adminSubtitle = 'DPUPR Indramayu • #JK-${widget.laporanId}';
+      } else if (jj == 'provinsi' || kw.contains('provinsi')) {
+        adminTitle = 'Admin Dinas PU / Provinsi';
+        adminSubtitle = 'Koordinasi Wilayah • #JK-${widget.laporanId}';
+      } else if (jj == 'nasional' || kw.contains('nasional') || kw.contains('pusat')) {
+        adminTitle = 'Admin Dinas PU / Nasional';
+        adminSubtitle = 'Pusat & Kabupaten • #JK-${widget.laporanId}';
+      }
     }
 
     return Container(
           width: double.infinity,
           padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top + 12,
-            bottom: 22,
-            left: 18,
-            right: 18,
+            top: MediaQuery.of(context).padding.top + 10,
+            bottom: 18,
+            left: 14,
+            right: 14,
           ),
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [AppColors.primaryColor, AppColors.darkBlue],
+              colors: [Color(0xFF0284C7), Color(0xFF0369A1), Color(0xFF075985)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(28),
-              bottomRight: Radius.circular(28),
+              bottomLeft: Radius.circular(26),
+              bottomRight: Radius.circular(26),
             ),
             boxShadow: [
               BoxShadow(
-                color: Color(0x260284C7),
-                blurRadius: 18,
-                offset: Offset(0, 7),
+                color: Color(0x300284C7),
+                blurRadius: 16,
+                offset: Offset(0, 6),
               ),
             ],
           ),
@@ -331,20 +392,44 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               IconButton(
                 onPressed: Get.back,
-                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withOpacity(0.15),
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(8),
+                ),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
               ),
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.support_agent_rounded,
-                  color: Colors.white,
-                  size: 28,
-                ),
+              const SizedBox(width: 8),
+              Stack(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withOpacity(0.35), width: 1.5),
+                    ),
+                    child: const Icon(
+                      Icons.support_agent_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22C55E),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -353,26 +438,43 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     Text(
                       adminTitle,
-                      style: const TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      'Laporan #JK-${widget.laporanId}',
-                      style: const TextStyle(
-                        color: Color(0xFFDCEFFE),
-                        fontSize: 12,
-                      ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            adminSubtitle,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFFE0F2FE),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               IconButton(
                 onPressed: () => _controller.muatChat(),
-                icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withOpacity(0.15),
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(8),
+                ),
+                icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 20),
               ),
             ],
           ),
