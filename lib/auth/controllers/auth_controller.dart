@@ -79,7 +79,6 @@ class AuthController extends GetxController {
     showLoadingOverlay();
 
     LoginResult result;
-
     try {
       result = await _service.login(email: email, password: password);
     } on AuthException catch (e) {

@@ -21,6 +21,31 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _rememberMe = false;
 
+  // Dinaikkan setiap kali kembali dari halaman register,
+  // supaya semua animasi diputar ulang.
+  int _replay = 0;
+
+  Future<void> _goRegister() async {
+    await Get.toNamed(AppRoutes.register);
+    if (!mounted) return;
+    setState(() => _replay++);
+  }
+
+  /// Animasi masuk berurutan. Key berubah saat _replay naik,
+  /// sehingga animasi mulai lagi dari awal.
+  Widget _anim(Widget child, int delayMs, {double fromY = 0.12}) {
+    return child
+        .animate(key: ValueKey('anim-$delayMs-$_replay'))
+        .fadeIn(delay: delayMs.ms, duration: 500.ms)
+        .slideY(
+          begin: fromY,
+          end: 0,
+          delay: delayMs.ms,
+          duration: 500.ms,
+          curve: Curves.easeOutCubic,
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -30,11 +55,13 @@ class _LoginScreenState extends State<LoginScreen> {
         body: Stack(
           children: [
             // Batik putih tipis di header
-            const Positioned(
+            Positioned(
               top: 0,
               left: 0,
               right: 0,
-              child: BatikPattern(height: 320, opacity: 0.16),
+              child: const BatikPattern(height: 320, opacity: 0.16)
+                  .animate(key: ValueKey('batik-$_replay'))
+                  .fadeIn(duration: 700.ms),
             ),
 
             SafeArea(
@@ -46,276 +73,152 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       children: [
                         // HEADER
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(28, 24, 28, 36),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Halo,\nselamat datang.',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 32,
-                                        height: 1.12,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: -1,
-                                        color: Colors.white,
+                        _anim(
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(28, 24, 28, 36),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Halo,\nselamat datang.',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 32,
+                                          height: 1.12,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: -1,
+                                          color: Colors.white,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      'Masuk untuk melapor dan memantau perbaikan jalan di Indramayu.',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 13.5,
-                                        height: 1.5,
-                                        color: Colors.white.withOpacity(0.8),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        'Masuk untuk melapor dan memantau perbaikan jalan di Indramayu.',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 13.5,
+                                          height: 1.5,
+                                          color: Colors.white.withOpacity(0.8),
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 16),
-                              Container(
-                                width: 56,
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
+                                const SizedBox(width: 16),
+                                Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: const Icon(
+                                    Icons.alt_route_rounded,
+                                    size: 30,
+                                    color: AppColors.primaryColor,
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.alt_route_rounded,
-                                  size: 30,
-                                  color: AppColors.primaryColor,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ).animate().fadeIn(duration: 500.ms),
+                          0,
+                          fromY: -0.12,
+                        ),
 
                         // LEMBARAN PUTIH
                         Expanded(
-                          child:
-                              Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.fromLTRB(
-                                      24,
-                                      32,
-                                      24,
-                                      24,
+                          child: _anim(
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.fromLTRB(
+                                24,
+                                32,
+                                24,
+                                24,
+                              ),
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(28),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _anim(
+                                    _buildInputField(
+                                      label: 'Email',
+                                      hint: 'nama@email.com',
+                                      prefixIcon: Icons.mail_outline_rounded,
+                                      controller: _c.loginEmailC,
                                     ),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.vertical(
-                                        top: Radius.circular(28),
-                                      ),
+                                    250,
+                                  ),
+
+                                  const SizedBox(height: 18),
+
+                                  _anim(
+                                    _buildInputField(
+                                      label: 'Kata sandi',
+                                      hint: 'Masukkan kata sandi',
+                                      prefixIcon: Icons.lock_outline_rounded,
+                                      controller: _c.loginPassC,
+                                      isPassword: true,
                                     ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                    330,
+                                  ),
+
+                                  const SizedBox(height: 10),
+
+                                  _anim(
+                                    Row(
                                       children: [
-                                        _buildInputField(
-                                          label: 'Email',
-                                          hint: 'nama@email.com',
-                                          prefixIcon:
-                                              Icons.mail_outline_rounded,
-                                          controller: _c.loginEmailC,
-                                        ),
-
-                                        const SizedBox(height: 18),
-
-                                        _buildInputField(
-                                          label: 'Kata sandi',
-                                          hint: 'Masukkan kata sandi',
-                                          prefixIcon:
-                                              Icons.lock_outline_rounded,
-                                          controller: _c.loginPassC,
-                                          isPassword: true,
-                                        ),
-
-                                        const SizedBox(height: 10),
-
-                                        Row(
-                                          children: [
-                                            InkWell(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              onTap: () => setState(
-                                                () =>
-                                                    _rememberMe = !_rememberMe,
-                                              ),
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      vertical: 6,
-                                                    ),
-                                                child: Row(
-                                                  children: [
-                                                    SizedBox(
-                                                      width: 22,
-                                                      height: 22,
-                                                      child: Checkbox(
-                                                        value: _rememberMe,
-                                                        activeColor: AppColors
-                                                            .primaryColor,
-                                                        visualDensity:
-                                                            VisualDensity
-                                                                .compact,
-                                                        materialTapTargetSize:
-                                                            MaterialTapTargetSize
-                                                                .shrinkWrap,
-                                                        shape: RoundedRectangleBorder(
+                                        InkWell(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          onTap: () => setState(
+                                            () => _rememberMe = !_rememberMe,
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 6,
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                SizedBox(
+                                                  width: 22,
+                                                  height: 22,
+                                                  child: Checkbox(
+                                                    value: _rememberMe,
+                                                    activeColor:
+                                                        AppColors.primaryColor,
+                                                    visualDensity:
+                                                        VisualDensity.compact,
+                                                    materialTapTargetSize:
+                                                        MaterialTapTargetSize
+                                                            .shrinkWrap,
+                                                    shape:
+                                                        RoundedRectangleBorder(
                                                           borderRadius:
                                                               BorderRadius.circular(
                                                                 5,
                                                               ),
                                                         ),
-                                                        onChanged: (v) =>
-                                                            setState(
-                                                              () =>
-                                                                  _rememberMe =
-                                                                      v ??
-                                                                      false,
-                                                            ),
-                                                      ),
+                                                    onChanged: (v) => setState(
+                                                      () => _rememberMe =
+                                                          v ?? false,
                                                     ),
-                                                    const SizedBox(width: 8),
-                                                    Text(
-                                                      'Ingat saya',
-                                                      style:
-                                                          GoogleFonts.plusJakartaSans(
-                                                            fontSize: 13,
-                                                            color:
-                                                                Colors.black87,
-                                                          ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                            const Spacer(),
-                                            TextButton(
-                                              onPressed: () {},
-                                              style: TextButton.styleFrom(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 4,
-                                                    ),
-                                                minimumSize: const Size(0, 32),
-                                                tapTargetSize:
-                                                    MaterialTapTargetSize
-                                                        .shrinkWrap,
-                                              ),
-                                              child: Text(
-                                                'Lupa kata sandi?',
-                                                style:
-                                                    GoogleFonts.plusJakartaSans(
-                                                      fontSize: 13,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: AppColors
-                                                          .primaryColor,
-                                                    ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-
-                                        const SizedBox(height: 22),
-
-                                        SizedBox(
-                                          width: double.infinity,
-                                          height: 54,
-                                          child: ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  AppColors.primaryColor,
-                                              foregroundColor: Colors.white,
-                                              elevation: 0,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(14),
-                                              ),
-                                            ),
-                                            onPressed: () =>
-                                                _c.login(_rememberMe),
-                                            child: Text(
-                                              'Masuk',
-                                              style:
-                                                  GoogleFonts.plusJakartaSans(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w700,
                                                   ),
-                                            ),
-                                          ),
-                                        ),
-
-                                        const SizedBox(height: 22),
-
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Divider(
-                                                color: Colors.grey.shade200,
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 14,
-                                                  ),
-                                              child: Text(
-                                                'atau',
-                                                style:
-                                                    GoogleFonts.plusJakartaSans(
-                                                      fontSize: 13,
-                                                      color: Colors.black45,
-                                                    ),
-                                              ),
-                                            ),
-                                            Expanded(
-                                              child: Divider(
-                                                color: Colors.grey.shade200,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-
-                                        const SizedBox(height: 22),
-
-                                        SizedBox(
-                                          width: double.infinity,
-                                          height: 54,
-                                          child: OutlinedButton(
-                                            style: OutlinedButton.styleFrom(
-                                              side: BorderSide(
-                                                color: Colors.grey.shade300,
-                                              ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(14),
-                                              ),
-                                            ),
-                                            onPressed: () {},
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Image.asset(
-                                                  'assets/images/google.png',
-                                                  width: 20,
-                                                  height: 20,
                                                 ),
-                                                const SizedBox(width: 10),
+                                                const SizedBox(width: 8),
                                                 Text(
-                                                  'Lanjut dengan Google',
+                                                  'Ingat saya',
                                                   style:
                                                       GoogleFonts.plusJakartaSans(
-                                                        fontSize: 15,
-                                                        fontWeight:
-                                                            FontWeight.w600,
+                                                        fontSize: 13,
                                                         color: Colors.black87,
                                                       ),
                                                 ),
@@ -323,47 +226,176 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(height: 18),
-
-                                        Center(
-                                          child: GestureDetector(
-                                            onTap: () =>
-                                                Get.toNamed(AppRoutes.register),
-                                            child: RichText(
-                                              text: TextSpan(
-                                                text: 'Belum punya akun? ',
-                                                style:
-                                                    GoogleFonts.plusJakartaSans(
-                                                      fontSize: 14,
-                                                      color: Colors.black54,
-                                                    ),
-                                                children: [
-                                                  TextSpan(
-                                                    text: 'Daftar',
-                                                    style:
-                                                        GoogleFonts.plusJakartaSans(
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          color: AppColors
-                                                              .primaryColor,
-                                                        ),
-                                                  ),
-                                                ],
-                                              ),
+                                        const Spacer(),
+                                        TextButton(
+                                          onPressed: () {},
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 4,
+                                            ),
+                                            minimumSize: const Size(0, 32),
+                                            tapTargetSize:
+                                                MaterialTapTargetSize
+                                                    .shrinkWrap,
+                                          ),
+                                          child: Text(
+                                            'Lupa kata sandi?',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.primaryColor,
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  )
-                                  .animate()
-                                  .fadeIn(delay: 150.ms, duration: 500.ms)
-                                  .slideY(
-                                    begin: 0.08,
-                                    end: 0,
-                                    duration: 500.ms,
-                                    curve: Curves.easeOutCubic,
+                                    400,
                                   ),
+
+                                  const SizedBox(height: 22),
+
+                                  _anim(
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 54,
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              AppColors.primaryColor,
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                          ),
+                                        ),
+                                        onPressed: () => _c.login(_rememberMe),
+                                        child: Text(
+                                          'Masuk',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    470,
+                                  ),
+
+                                  const SizedBox(height: 22),
+
+                                  _anim(
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Divider(
+                                            color: Colors.grey.shade200,
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                          ),
+                                          child: Text(
+                                            'atau',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 13,
+                                              color: Colors.black45,
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Divider(
+                                            color: Colors.grey.shade200,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    530,
+                                  ),
+
+                                  const SizedBox(height: 22),
+
+                                  _anim(
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 54,
+                                      child: OutlinedButton(
+                                        style: OutlinedButton.styleFrom(
+                                          side: BorderSide(
+                                            color: Colors.grey.shade300,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                          ),
+                                        ),
+                                        onPressed: () {},
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Image.asset(
+                                              'assets/images/google.png',
+                                              width: 20,
+                                              height: 20,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Text(
+                                              'Lanjut dengan Google',
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.black87,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    590,
+                                  ),
+
+                                  const SizedBox(height: 18),
+
+                                  _anim(
+                                    Center(
+                                      child: GestureDetector(
+                                        onTap: _goRegister,
+                                        child: RichText(
+                                          text: TextSpan(
+                                            text: 'Belum punya akun? ',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 14,
+                                              color: Colors.black54,
+                                            ),
+                                            children: [
+                                              TextSpan(
+                                                text: 'Daftar',
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: AppColors
+                                                          .primaryColor,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    650,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            100,
+                            fromY: 0.08,
+                          ),
                         ),
                       ],
                     ),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/modules/home/controllers/home_controller.dart';
+import 'package:roadis/utils/app_colors.dart';
+import 'package:roadis/utils/widgets/roadis_skeleton.dart';
 
 class ReportStats extends StatelessWidget {
   const ReportStats({super.key});
@@ -19,40 +20,115 @@ class ReportStats extends StatelessWidget {
         return _ErrorRow(message: error, onRetry: c.fetchRiwayat);
       }
 
-      return Row(
+      return RoadisSkeleton(
+        enabled: loading,
+        child: Row(
         children: [
           Expanded(
             child: _StatCard(
-              icon: Icons.description_outlined,
-              value: loading ? '-' : '${c.totalLaporan}',
-              label: 'Total Laporan',
-              iconColor: AppColors.primaryColor,
+              icon: Icons.description_rounded,
+              value: loading ? '00' : '${c.totalLaporan}',
+              label: 'Total laporan',
+              color: AppColors.primaryColor,
               loading: loading,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: _StatCard(
-              icon: Icons.access_time,
-              value: loading ? '-' : '${c.totalDiproses}',
+              icon: Icons.hourglass_bottom_rounded,
+              value: loading ? '00' : '${c.totalDiproses}',
               label: 'Diproses',
-              iconColor: Colors.orange,
+              color: const Color(0xFFF59E0B),
               loading: loading,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: _StatCard(
-              icon: Icons.check_circle_outline,
-              value: loading ? '-' : '${c.totalSelesai}',
+              icon: Icons.check_circle_rounded,
+              value: loading ? '00' : '${c.totalSelesai}',
               label: 'Selesai',
-              iconColor: Colors.green,
+              color: const Color(0xFF22C55E),
               loading: loading,
             ),
           ),
         ],
+        ),
       );
     });
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+  final bool loading;
+
+  const _StatCard({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+    this.loading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color.withOpacity(0.16), color.withOpacity(0.06)],
+        ),
+        border: Border.all(color: color.withOpacity(0.14)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Icon(icon, size: 17, color: color),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 22,
+              height: 1,
+              fontWeight: FontWeight.w800,
+              color: TextColors.primaryTextColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.greyColor,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -69,7 +145,7 @@ class _ErrorRow extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.whiteColor,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
@@ -83,63 +159,6 @@ class _ErrorRow extends StatelessWidget {
             ),
           ),
           TextButton(onPressed: onRetry, child: const Text('Coba lagi')),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-  final Color iconColor;
-  final bool loading;
-
-  const _StatCard({
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.iconColor,
-    this.loading = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: AppColors.whiteColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: iconColor),
-          const SizedBox(height: 6),
-          loading
-              ? const SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(
-                  value,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: TextColors.primaryTextColor,
-                  ),
-                ),
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 8,
-              fontWeight: FontWeight.w500,
-              color: AppColors.greyColor,
-            ),
-          ),
         ],
       ),
     );

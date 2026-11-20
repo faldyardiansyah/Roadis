@@ -4,202 +4,193 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:roadis/routes/app_routes.dart';
 import 'package:roadis/utils/app_colors.dart';
+import 'package:roadis/utils/widgets/batik_patern.dart';
 
 class ServiceBanner extends StatelessWidget {
   const ServiceBanner({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
             AppColors.primaryColor,
-            AppColors.primaryColor.withOpacity(0.88),
-            AppColors.primaryColor.withOpacity(0.72),
+            AppColors.primaryColor.withOpacity(0.86),
+            AppColors.primaryColor.withOpacity(0.70),
           ],
         ),
-        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryColor.withOpacity(0.20),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: AppColors.primaryColor.withOpacity(0.28),
+            blurRadius: 26,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(28),
         child: Stack(
           children: [
+            Positioned.fill(
+              child: BatikPattern(
+                color: Colors.white,
+                opacity: 0.20,
+                scale: 2.4,
+                fadeOut: true,
+              ),
+            ),
+            // lingkaran lembut
             Positioned(
-              right: -35,
-              top: -45,
+              right: -40,
+              top: -50,
+              child: _blob(150, 0.10),
+            ),
+            Positioned(
+              right: 30,
+              bottom: -70,
+              child: _blob(140, 0.07),
+            ),
+            // ilustrasi "jalan" di kanan
+            Positioned(
+              right: 16,
+              top: 18,
               child: Container(
-                width: 130,
-                height: 130,
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
+                  color: Colors.white.withOpacity(0.16),
                   shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withOpacity(0.25)),
                 ),
-              ),
-            ),
-            Positioned(
-              right: 35,
-              bottom: -65,
-              child: Container(
-                width: 130,
-                height: 130,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  shape: BoxShape.circle,
+                child: const Icon(
+                  Icons.add_road_rounded,
+                  color: Colors.white,
+                  size: 32,
                 ),
-              ),
+              )
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .moveY(begin: 0, end: -5, duration: 1800.ms, curve: Curves.easeInOut),
             ),
-            Positioned(
-              right: 20,
-              top: 65,
-              child: Icon(
-                Icons.location_on_rounded,
-                size: 90,
-                color: Colors.white.withOpacity(0.06),
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // BADGE
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.14),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.10),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.16),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.18)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.groups_rounded, size: 14, color: Colors.white),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Pelayanan warga',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.groups_rounded,
-                        size: 14,
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: w * 0.66,
+                    child: Text(
+                      'Laporkan jalan rusak\ndi sekitarmu',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 22,
+                        height: 1.25,
+                        fontWeight: FontWeight.w800,
                         color: Colors.white,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'PELAYANAN WARGA',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 14),
-
-                // JUDUL
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.72,
-                  child: Text(
-                    'Laporkan Jalan Rusak\ndi Sekitarmu',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 21,
-                      height: 1.25,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 9),
-
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.78,
-                  child: Text(
-                    'Bantu wujudkan jalanan Indramayu yang aman dan nyaman bersama Roadis.',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11.5,
-                      height: 1.5,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white.withOpacity(0.85),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: w * 0.70,
+                    child: Text(
+                      'Bantu wujudkan jalanan Indramayu yang aman dan nyaman bersama Roadis.',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        height: 1.5,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withOpacity(0.88),
+                      ),
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    Get.toNamed(AppRoutes.reportCamera);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.whiteColor,
-                    foregroundColor: AppColors.primaryColor,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 11,
+                  const SizedBox(height: 18),
+                  ElevatedButton(
+                    onPressed: () => Get.toNamed(AppRoutes.reportCamera),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.primaryColor,
+                      elevation: 0,
+                      padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                      shape: const StadiumBorder(),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryColor,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.photo_camera_rounded,
+                              size: 16, color: Colors.white),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Laporkan sekarang',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.arrow_forward_rounded,
+                            size: 16, color: AppColors.primaryColor),
+                      ],
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 27,
-                        height: 27,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryColor.withOpacity(0.10),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.add_rounded,
-                          size: 18,
-                          color: AppColors.primaryColor,
-                        ),
+                  )
+                      .animate(onPlay: (c) => c.repeat())
+                      .shimmer(
+                        delay: 2200.ms,
+                        duration: 1200.ms,
+                        color: AppColors.primaryColor.withOpacity(0.12),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Laporkan Sekarang',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primaryColor,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      const Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 17,
-                        color: AppColors.primaryColor,
-                      ),
-                    ],
-                  ),
-                )
-                .animate(onPlay: (controller) => controller.repeat(reverse: false))
-                .shimmer(
-                  delay: 2000.ms,     
-                  duration: 1200.ms,  
-                  color: AppColors.primaryColor.withOpacity(0.1), 
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _blob(double size, double opacity) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(opacity),
+          shape: BoxShape.circle,
+        ),
+      );
 }

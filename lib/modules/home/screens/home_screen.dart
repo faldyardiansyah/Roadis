@@ -7,6 +7,9 @@ import 'package:roadis/modules/home/widgets/recent_reports.dart';
 import 'package:roadis/modules/home/widgets/report_map.dart';
 import 'package:roadis/modules/home/widgets/report_stats.dart';
 import 'package:roadis/modules/home/widgets/service_banner.dart';
+import 'package:roadis/modules/home/widgets/tips_card.dart';
+import 'package:roadis/utils/app_colors.dart';
+import 'package:roadis/utils/widgets/batik_patern.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -17,82 +20,76 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: homeC.refreshAll,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const HomeHeader()
-                    .animate()
-                    .fadeIn(duration: 600.ms)
-                    .slideY(
-                      begin: -0.15,
-                      end: 0,
-                      duration: 600.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
-
-                const SizedBox(height: 16),
-
-                const ServiceBanner()
-                    .animate()
-                    .fadeIn(duration: 700.ms, delay: 100.ms)
-                    .slideY(
-                      begin: 0.15,
-                      end: 0,
-                      duration: 700.ms,
-                      delay: 100.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
-
-                const SizedBox(height: 16),
-
-                const ReportStats()
-                    .animate()
-                    .fadeIn(duration: 600.ms, delay: 200.ms)
-                    .scale(
-                      begin: const Offset(0.95, 0.95),
-                      end: const Offset(1, 1),
-                      duration: 600.ms,
-                      delay: 200.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
-
-                const SizedBox(height: 16),
-
-                const ReportMap()
-                    .animate()
-                    .fadeIn(duration: 700.ms, delay: 300.ms)
-                    .scale(
-                      begin: const Offset(0.96, 0.96),
-                      end: const Offset(1, 1),
-                      duration: 700.ms,
-                      delay: 300.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
-
-                const SizedBox(height: 16),
-
-                const RecentReports()
-                    .animate()
-                    .fadeIn(duration: 700.ms, delay: 400.ms)
-                    .slideY(
-                      begin: 0.12,
-                      end: 0,
-                      duration: 700.ms,
-                      delay: 400.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
-
-                const SizedBox(height: 20),
-              ],
+      body: Stack(
+        children: [
+          // Batik tipis di latar atas, memudar ke bawah
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: BatikPattern(
+              height: 300,
+              color: AppColors.primaryColor,
+              opacity: 0.20,
+              scale: 2.6,
             ),
           ),
-        ),
+          // Wash warna lembut supaya mirip referensi (pastel)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      AppColors.primaryColor.withOpacity(0.10),
+                      const Color(0xFFF8FAFC).withOpacity(0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: RefreshIndicator(
+              color: AppColors.primaryColor,
+              onRefresh: homeC.refreshAll,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const HomeHeader(),
+                    const SizedBox(height: 18),
+                    const ServiceBanner(),
+                    const SizedBox(height: 18),
+                    const ReportStats(),
+                    const SizedBox(height: 22),
+                    const TipsCard(),
+                    const SizedBox(height: 22),
+                    const ReportMap(),
+                    const SizedBox(height: 22),
+                    const RecentReports(),
+                  ]
+                      .animate(interval: 90.ms)
+                      .fadeIn(duration: 500.ms)
+                      .slideY(
+                        begin: 0.08,
+                        end: 0,
+                        duration: 500.ms,
+                        curve: Curves.easeOutCubic,
+                      ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
