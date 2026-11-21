@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:roadis/modules/home/controllers/home_controller.dart';
 import 'package:roadis/modules/home/widgets/home_header.dart';
+import 'package:roadis/modules/home/widgets/quick_actions.dart';
 import 'package:roadis/modules/home/widgets/recent_reports.dart';
-import 'package:roadis/modules/home/widgets/report_map.dart';
 import 'package:roadis/modules/home/widgets/report_stats.dart';
-import 'package:roadis/modules/home/widgets/service_banner.dart';
 import 'package:roadis/modules/home/widgets/tips_card.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/utils/widgets/batik_patern.dart';
@@ -17,79 +17,103 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final homeC = Get.put(HomeController());
+    final topInset = MediaQuery.of(context).padding.top;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: Stack(
-        children: [
-          // Batik tipis di latar atas, memudar ke bawah
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: BatikPattern(
-              height: 300,
-              color: AppColors.primaryColor,
-              opacity: 0.20,
-              scale: 2.6,
-            ),
-          ),
-          // Wash warna lembut supaya mirip referensi (pastel)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 320,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.primaryColor.withOpacity(0.10),
-                      const Color(0xFFF8FAFC).withOpacity(0),
-                    ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F7FB),
+        body: RefreshIndicator(
+          color: AppColors.primaryColor,
+          edgeOffset: topInset + 8,
+          onRefresh: homeC.refreshAll,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Stack(
+              children: [
+                // Latar header gradasi + batik (ikut ter-scroll)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: topInset + 250,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(32),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primaryColor,
+                            Color.lerp(
+                              AppColors.primaryColor,
+                              Colors.black,
+                              0.35,
+                            )!,
+                          ],
+                        ),
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: BatikPattern(
+                              color: Colors.white,
+                              opacity: 0.16,
+                              scale: 2.4,
+                              fadeOut: true,
+                            ),
+                          ),
+                          Positioned(
+                            right: -50,
+                            top: -60,
+                            child: Container(
+                              width: 170,
+                              height: 170,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withOpacity(0.07),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ),
-          SafeArea(
-            child: RefreshIndicator(
-              color: AppColors.primaryColor,
-              onRefresh: homeC.refreshAll,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const HomeHeader(),
-                    const SizedBox(height: 18),
-                    const ServiceBanner(),
-                    const SizedBox(height: 18),
-                    const ReportStats(),
-                    const SizedBox(height: 22),
-                    const TipsCard(),
-                    const SizedBox(height: 22),
-                    const ReportMap(),
-                    const SizedBox(height: 22),
-                    const RecentReports(),
-                  ]
-                      .animate(interval: 90.ms)
-                      .fadeIn(duration: 500.ms)
-                      .slideY(
-                        begin: 0.08,
-                        end: 0,
-                        duration: 500.ms,
-                        curve: Curves.easeOutCubic,
-                      ),
+
+                Padding(
+                  padding: EdgeInsets.fromLTRB(20, topInset + 14, 20, 28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children:
+                        [
+                              const HomeHeader(),
+                              const SizedBox(height: 18),
+                              const ReportStats(),
+                              const SizedBox(height: 16),
+                              const QuickActions(),
+                              const SizedBox(height: 24),
+                              const TipsCard(),
+                              const SizedBox(height: 24),
+                              const RecentReports(),
+                            ]
+                            .animate(interval: 90.ms)
+                            .fadeIn(duration: 500.ms)
+                            .slideY(
+                              begin: 0.08,
+                              end: 0,
+                              duration: 500.ms,
+                              curve: Curves.easeOutCubic,
+                            ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

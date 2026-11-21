@@ -29,7 +29,7 @@ class SectionTitle extends StatelessWidget {
           child: Text(
             title,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 15,
+              fontSize: 15.5,
               fontWeight: FontWeight.w800,
               color: TextColors.primaryTextColor,
             ),
@@ -38,16 +38,31 @@ class SectionTitle extends StatelessWidget {
         if (actionLabel != null)
           InkWell(
             onTap: onAction,
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              child: Text(
-                actionLabel!,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primaryColor,
-                ),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    actionLabel!,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 15,
+                    color: AppColors.primaryColor,
+                  ),
+                ],
               ),
             ),
           ),

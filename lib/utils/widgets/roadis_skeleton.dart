@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:roadis/utils/app_colors.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class RoadisSkeleton extends StatelessWidget {
@@ -12,12 +11,14 @@ class RoadisSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Skeletonizer(
       enabled: enabled,
-      effect: ShimmerEffect(
-        baseColor: AppColors.primaryColor.withOpacity(0.12),
-        highlightColor: AppColors.primaryColor.withOpacity(0.03),
-        duration: const Duration(milliseconds: 3000),
+      enableSwitchAnimation: true,
+      effect: const ShimmerEffect(
+        baseColor: Color(0xFFE6EAF2),
+        highlightColor: Color(0xFFF7F9FC),
+        duration: Duration(milliseconds: 1400),
       ),
-      containersColor: AppColors.primaryColor.withOpacity(0.08),
+      // Kartu tetap putih, hanya isinya yang jadi bone.
+      containersColor: Colors.white,
       child: child,
     );
   }

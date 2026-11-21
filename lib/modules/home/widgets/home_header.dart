@@ -36,20 +36,6 @@ class _HomeHeaderState extends State<HomeHeader> {
     return 'Selamat malam,';
   }
 
-  IconData get _sapaanIcon {
-    final h = DateTime.now().hour;
-    if (h < 11) return Icons.wb_twilight_rounded;
-    if (h < 18) return Icons.wb_sunny_rounded;
-    return Icons.nightlight_round;
-  }
-
-  Color get _sapaanColor {
-    final h = DateTime.now().hour;
-    if (h < 11) return const Color(0xFFFFB347);
-    if (h < 18) return const Color(0xFFFFC107);
-    return const Color(0xFF7C83FD);
-  }
-
   Future<void> _loadLokasi() async {
     if (mounted) {
       setState(() {
@@ -130,6 +116,11 @@ class _HomeHeaderState extends State<HomeHeader> {
     return desa ?? kabupaten;
   }
 
+  BoxDecoration get _glass => BoxDecoration(
+    color: Colors.white.withOpacity(0.16),
+    border: Border.all(color: Colors.white.withOpacity(0.24)),
+  );
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -137,21 +128,40 @@ class _HomeHeaderState extends State<HomeHeader> {
       children: [
         Row(
           children: [
-            Expanded(child: _locationPill()),
+            _avatar(),
             const SizedBox(width: 12),
+            Expanded(child: _greeting()),
             _notificationButton(),
           ],
         ),
-        const SizedBox(height: 20),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(child: _greeting()),
-            _timeBubble(),
-          ],
-        ),
+        const SizedBox(height: 16),
+        _locationPill(),
       ],
     );
+  }
+
+  Widget _avatar() {
+    return Obx(() {
+      final nama = authC.user.value?.nama ?? 'Warga';
+      final inisial = nama.trim().isEmpty ? 'W' : nama.trim()[0].toUpperCase();
+      return Container(
+        width: 46,
+        height: 46,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+        ),
+        child: Text(
+          inisial,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
+            color: AppColors.primaryColor,
+          ),
+        ),
+      );
+    });
   }
 
   Widget _greeting() {
@@ -161,115 +171,76 @@ class _HomeHeaderState extends State<HomeHeader> {
         Text(
           _sapaan,
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 22,
-            height: 1.15,
-            fontWeight: FontWeight.w800,
-            color: TextColors.primaryTextColor,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.white.withOpacity(0.8),
           ),
         ),
+        const SizedBox(height: 2),
         Obx(() {
           final nama = authC.user.value?.nama ?? 'Warga';
           return Text(
-            '$nama!',
+            nama,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 26,
+              fontSize: 18,
               height: 1.2,
               fontWeight: FontWeight.w800,
-              color: AppColors.primaryColor,
+              color: Colors.white,
             ),
           );
         }),
-        const SizedBox(height: 6),
-        Text(
-          'Yuk jaga jalan Indramayu tetap mulus ✨',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w500,
-            color: AppColors.greyColor,
-          ),
-        ),
       ],
     );
   }
 
-  Widget _timeBubble() {
-    return Container(
-      width: 72,
-      height: 72,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            _sapaanColor.withOpacity(0.30),
-            _sapaanColor.withOpacity(0.06),
-          ],
-        ),
-      ),
-      child: Icon(_sapaanIcon, size: 38, color: _sapaanColor),
-    );
-  }
-
   Widget _locationPill() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: GestureDetector(
-        onTap: _loading ? null : _loadLokasi,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryColor.withOpacity(0.10),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_loading)
-                SizedBox(
-                  width: 13,
-                  height: 13,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 1.8,
-                    color: AppColors.primaryColor,
-                  ),
-                )
-              else
-                Icon(
-                  Icons.location_on_rounded,
-                  size: 15,
-                  color: AppColors.primaryColor,
+    return GestureDetector(
+      onTap: _loading ? null : _loadLokasi,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: _glass.copyWith(borderRadius: BorderRadius.circular(30)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_loading)
+              const SizedBox(
+                width: 13,
+                height: 13,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.8,
+                  color: Colors.white,
                 ),
+              )
+            else
+              const Icon(
+                Icons.location_on_rounded,
+                size: 15,
+                color: Colors.white,
+              ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                _lokasi,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            if (!_loading) ...[
               const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  _lokasi,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: TextColors.primaryTextColor,
-                  ),
-                ),
+              Icon(
+                Icons.refresh_rounded,
+                size: 14,
+                color: Colors.white.withOpacity(0.8),
               ),
-              if (!_loading) ...[
-                const SizedBox(width: 6),
-                Icon(
-                  Icons.refresh_rounded,
-                  size: 14,
-                  color: AppColors.primaryColor.withOpacity(0.7),
-                ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -284,24 +255,14 @@ class _HomeHeaderState extends State<HomeHeader> {
         child: Container(
           width: 46,
           height: 46,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryColor.withOpacity(0.10),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+          decoration: _glass.copyWith(shape: BoxShape.circle),
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Icon(
+              const Icon(
                 Icons.notifications_none_rounded,
                 size: 23,
-                color: AppColors.primaryColor,
+                color: Colors.white,
               ),
               Positioned(
                 right: 12,
