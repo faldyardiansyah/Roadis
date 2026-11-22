@@ -18,6 +18,7 @@ class LaporanModel {
   final String? namaPelapor;
   final String? jenisJalan;
   final String? kewenanganJalan;
+  final String? severity;
 
   LaporanModel({
     required this.id,
@@ -36,6 +37,7 @@ class LaporanModel {
     this.namaPelapor,
     this.jenisJalan,
     this.kewenanganJalan,
+    this.severity,
   });
 
   factory LaporanModel.fromJson(Map<String, dynamic> json) {
@@ -141,6 +143,7 @@ class LaporanModel {
       namaPelapor: namaPelapor,
       jenisJalan: jenisJalan,
       kewenanganJalan: kewenanganJalan,
+      severity: json['severity']?.toString(),
     );
   }
 }

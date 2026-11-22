@@ -118,6 +118,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       position: widget.position,
       detection: widget.detection,
       wilayahList: widget.wilayahList,
+      isUsingGroq: widget.isUsingGroq,
     );
   }
 
@@ -160,6 +161,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
       _controller.updateImage(source);
       _controller.updateDetection(result);
+      _controller.isUsingGroq.value = true;
 
       if (result != null) {
         showAwesomeSnackbar(
@@ -248,6 +250,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
       _controller.updateImage(displayImage);
       _controller.updateDetection(result);
+      _controller.isUsingGroq.value = false;
 
       if (result != null) {
         showAwesomeSnackbar(

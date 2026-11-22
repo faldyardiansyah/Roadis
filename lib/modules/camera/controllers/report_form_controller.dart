@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geocoding/geocoding.dart' as geo;
@@ -34,6 +33,7 @@ class ReportFormController extends GetxController {
 
   final isSubmitting = false.obs;
   final isCheckingRoad = false.obs;
+  final isUsingGroq = false.obs;
 
   final selectedType = Rxn<String>();
   final selectedWilayahId = Rxn<int>();
@@ -75,11 +75,13 @@ class ReportFormController extends GetxController {
     required Position position,
     required DetectionResult? detection,
     required List<WilayahModel> wilayahList,
+    bool isUsingGroq = false,
   }) {
     this.image = image;
     this.position = position;
     this.detection = detection;
     this.wilayahList = wilayahList;
+    this.isUsingGroq.value = isUsingGroq;
 
     gpsPoint = LatLng(position.latitude, position.longitude);
     pickedPoint.value = gpsPoint;
@@ -411,7 +413,16 @@ class ReportFormController extends GetxController {
         'wilayah_id': wilayahId.toString(),
         'latitude': point.latitude.toString(),
         'longitude': point.longitude.toString(),
+        'severity': 'belum_dinilai',
       });
+
+      if (detection != null) {
+        request.fields['ai_model'] =
+            isUsingGroq.value ? 'groq_qwen3.8-27b' : 'yolov11';
+        request.fields['ai_confidence'] =
+            detection!.confidence.toStringAsFixed(4);
+        request.fields['ai_label'] = detection!.displayName;
+      }
 
       request.files.add(await http.MultipartFile.fromPath('foto', image.path));
 
