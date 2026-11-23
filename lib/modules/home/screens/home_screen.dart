@@ -31,7 +31,7 @@ class HomeScreen extends StatelessWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             child: Stack(
               children: [
-                // Latar header gradasi + batik (ikut ter-scroll)
+                // Latar header gradasi + batik + watermark burung khas Indramayu (ikut ter-scroll)
                 Positioned(
                   top: 0,
                   left: 0,
@@ -48,11 +48,7 @@ class HomeScreen extends StatelessWidget {
                           end: Alignment.bottomRight,
                           colors: [
                             AppColors.primaryColor,
-                            Color.lerp(
-                              AppColors.primaryColor,
-                              Colors.black,
-                              0.35,
-                            )!,
+                            AppColors.midnightBlue,
                           ],
                         ),
                       ),
@@ -61,9 +57,26 @@ class HomeScreen extends StatelessWidget {
                           Positioned.fill(
                             child: BatikPattern(
                               color: Colors.white,
-                              opacity: 0.16,
+                              opacity: 0.12,
                               scale: 2.4,
                               fadeOut: true,
+                            ),
+                          ),
+                          // Watermark Burung Khas Indramayu di Pojok Kanan Atas
+                          Positioned(
+                            top: -8,
+                            right: -15,
+                            width: 250,
+                            height: 230,
+                            child: IgnorePointer(
+                              child: Opacity(
+                                opacity: 0.28,
+                                child: Image.asset(
+                                  'assets/images/burung_batik.png',
+                                  fit: BoxFit.contain,
+                                  alignment: Alignment.topRight,
+                                ),
+                              ),
                             ),
                           ),
                           Positioned(
@@ -74,7 +87,7 @@ class HomeScreen extends StatelessWidget {
                               height: 170,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.white.withOpacity(0.07),
+                                color: Colors.white.withOpacity(0.05),
                               ),
                             ),
                           ),

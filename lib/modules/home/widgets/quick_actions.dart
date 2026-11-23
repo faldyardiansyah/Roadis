@@ -36,9 +36,9 @@ class QuickActions extends StatelessWidget {
             onTap: () => Get.toNamed(AppRoutes.maps),
           ),
           _Action(
-            icon: Icons.notifications_rounded,
-            label: 'Notifikasi',
-            onTap: () => Get.toNamed(AppRoutes.notifikasi),
+            icon: Icons.menu_book_rounded,
+            label: 'Panduan',
+            onTap: () => Get.toNamed(AppRoutes.faq),
           ),
         ],
       ),
