@@ -7,10 +7,9 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:roadis/core/laporan/models/laporan_model.dart';
-import 'package:roadis/routes/app_routes.dart';
+import 'package:roadis/modules/history/screens/detail_laporan_screen.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/utils/location_service.dart';
-import 'package:roadis/utils/widgets/batik_patern.dart';
 import 'package:roadis/utils/widgets/show_snackbar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -71,6 +70,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _moveToUserLocation() async {
+    HapticFeedback.lightImpact();
     if (_currentLocation != null) {
       _move(_currentLocation!, 16.0);
       return;
@@ -108,188 +108,168 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _showFilterBottomSheet() {
+    HapticFeedback.lightImpact();
     Get.bottomSheet(
       Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          child: Stack(
-            children: [
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: IgnorePointer(
-                  child: BatikPattern(
-                    height: 130,
-                    color: AppColors.primaryColor,
-                    opacity: 0.07,
-                    scale: 2.8,
-                    fadeOut: true,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 12, 22, 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
-              ),
-              SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(22, 12, 22, 22),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 42,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      const SizedBox(height: 18),
-                      Row(
+                      child: const Icon(
+                        Icons.tune_rounded,
+                        color: AppColors.primaryColor,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryColor,
-                              borderRadius: BorderRadius.circular(15),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primaryColor.withOpacity(
-                                    0.3,
-                                  ),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.tune_rounded,
-                              color: Colors.white,
-                              size: 22,
+                          Text(
+                            'Filter Sebaran Peta',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.darkTextColor,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Filter peta',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                    color: TextColors.primaryTextColor,
-                                  ),
-                                ),
-                                Text(
-                                  'Pilih laporan yang ingin ditampilkan',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 11.5,
-                                    color: AppColors.greyColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: _c.resetFilters,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 13,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryColor.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                'Reset',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primaryColor,
-                                ),
-                              ),
+                          Text(
+                            'Saring titik kerusakan di Indramayu',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11.5,
+                              color: AppColors.greyColor,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
-                      _sheetLabel(Icons.flag_rounded, 'Status laporan'),
-                      const SizedBox(height: 12),
-                      Obx(
-                        () => Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final filter in MapsController.filterOptions)
-                              _SheetChip(
-                                label: filter,
-                                selected: _c.selectedFilter.value == filter,
-                                onTap: () => _c.selectFilter(filter),
-                              ),
-                          ],
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        _c.resetFilters();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
                         ),
-                      ),
-                      const SizedBox(height: 22),
-                      _sheetLabel(
-                        Icons.account_balance_rounded,
-                        'Kewenangan jalan',
-                      ),
-                      const SizedBox(height: 12),
-                      Obx(
-                        () => Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final kw in MapsController.kewenanganOptions)
-                              _SheetChip(
-                                label: kw == 'Semua'
-                                    ? 'Semua kewenangan'
-                                    : 'Jalan $kw',
-                                selected: _c.selectedKewenangan.value == kw,
-                                onTap: () => _c.selectKewenangan(kw),
-                              ),
-                          ],
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                      ),
-                      const SizedBox(height: 28),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 54,
-                        child: ElevatedButton(
-                          onPressed: () => Get.back(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryColor,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                          child: Obx(
-                            () => Text(
-                              'Tampilkan ${_c.filteredLaporan.length} laporan',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
-                            ),
+                        child: Text(
+                          'Reset',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryColor,
                           ),
                         ),
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                _sheetLabel(Icons.flag_rounded, 'Status Perbaikan'),
+                const SizedBox(height: 10),
+                Obx(
+                  () => Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final filter in MapsController.filterOptions)
+                        _SheetChip(
+                          label: filter,
+                          selected: _c.selectedFilter.value == filter,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            _c.selectFilter(filter);
+                          },
+                        ),
                     ],
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 20),
+                _sheetLabel(
+                  Icons.account_balance_rounded,
+                  'Kewenangan Jalan',
+                ),
+                const SizedBox(height: 10),
+                Obx(
+                  () => Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final kw in MapsController.kewenanganOptions)
+                        _SheetChip(
+                          label: kw == 'Semua'
+                              ? 'Semua Kewenangan'
+                              : 'Jalan $kw',
+                          selected: _c.selectedKewenangan.value == kw,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            _c.selectKewenangan(kw);
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 26),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => Get.back(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Obx(
+                      () => Text(
+                        'Tampilkan ${_c.filteredLaporan.length} Titik Laporan',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -300,14 +280,14 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _sheetLabel(IconData icon, String text) => Row(
     children: [
-      Icon(icon, size: 16, color: AppColors.primaryColor),
-      const SizedBox(width: 7),
+      Icon(icon, size: 15, color: AppColors.primaryColor),
+      const SizedBox(width: 6),
       Text(
         text,
         style: GoogleFonts.plusJakartaSans(
           fontSize: 12.5,
-          fontWeight: FontWeight.w800,
-          color: TextColors.primaryTextColor,
+          fontWeight: FontWeight.w700,
+          color: AppColors.darkTextColor,
         ),
       ),
     ],
@@ -316,11 +296,14 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.of(context).padding.top;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEAEFF5),
+      resizeToAvoidBottomInset: false,
+      backgroundColor: const Color(0xFFF1F5F9),
       body: Stack(
         children: [
+          // Fullscreen Map Canvas
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
@@ -353,8 +336,8 @@ class _MapScreenState extends State<MapScreen> {
                     for (final lap in _c.filteredLaporan)
                       Marker(
                         point: LatLng(lap.latitude, lap.longitude),
-                        width: 60,
-                        height: 60,
+                        width: 54,
+                        height: 54,
                         child: GestureDetector(
                           onTap: () => _selectMarker(lap),
                           child: _ReportMarker(
@@ -369,166 +352,123 @@ class _MapScreenState extends State<MapScreen> {
             ],
           ),
 
+          // Floating Top Controls (Search Bar & Filter Chips)
           Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: IgnorePointer(
-              child: SizedBox(
-                height: topInset + 190,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              AppColors.primaryColor.withOpacity(0.97),
-                              AppColors.primaryColor.withOpacity(0.80),
-                              AppColors.primaryColor.withOpacity(0),
-                            ],
-                            stops: const [0, 0.55, 1],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: BatikPattern(
-                        color: Colors.white,
-                        opacity: 0.15,
-                        scale: 2.4,
-                        fadeOut: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          Positioned(
-            top: topInset + 12,
+            top: topInset + 10,
             left: 16,
             right: 16,
-            child:
-                Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(child: _buildSearchBar()),
-                            const SizedBox(width: 10),
-                            _buildFilterButton(),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        _buildStatusChips(),
-                      ],
-                    )
-                    .animate()
-                    .fadeIn(duration: 450.ms)
-                    .slideY(
-                      begin: -0.15,
-                      end: 0,
-                      duration: 450.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: _buildSearchBar()),
+                    const SizedBox(width: 10),
+                    _buildFilterButton(),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                _buildStatusChips(),
+              ],
+            )
+                .animate()
+                .fadeIn(duration: 400.ms)
+                .slideY(begin: -0.1, curve: Curves.easeOutCubic),
           ),
 
+          // Floating Right Controls (My Location & Zoom In/Out)
           Positioned(
             right: 16,
-            top: topInset + 136,
-            child:
-                Column(
-                      children: [
-                        _MapIconButton(
-                          onTap: _moveToUserLocation,
-                          child: _isLocating
-                              ? SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.primaryColor,
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.my_location_rounded,
-                                  size: 21,
-                                  color: AppColors.primaryColor,
-                                ),
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: _softShadow,
+            top: topInset + 120,
+            child: Column(
+              children: [
+                _MapIconButton(
+                  onTap: _moveToUserLocation,
+                  child: _isLocating
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.primaryColor,
                           ),
-                          child: Column(
-                            children: [
-                              InkWell(
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(16),
-                                ),
-                                onTap: () => _move(
-                                  _mapController.camera.center,
-                                  _mapController.camera.zoom + 1,
-                                ),
-                                child: const SizedBox(
-                                  width: 44,
-                                  height: 44,
-                                  child: Icon(
-                                    Icons.add_rounded,
-                                    size: 22,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                width: 24,
-                                height: 1,
-                                color: Colors.grey.shade200,
-                              ),
-                              InkWell(
-                                borderRadius: const BorderRadius.vertical(
-                                  bottom: Radius.circular(16),
-                                ),
-                                onTap: () => _move(
-                                  _mapController.camera.center,
-                                  _mapController.camera.zoom - 1,
-                                ),
-                                child: const SizedBox(
-                                  width: 44,
-                                  height: 44,
-                                  child: Icon(
-                                    Icons.remove_rounded,
-                                    size: 22,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ),
-                            ],
+                        )
+                      : const Icon(
+                          Icons.my_location_rounded,
+                          size: 21,
+                          color: AppColors.primaryColor,
+                        ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: _floatingShadow,
+                  ),
+                  child: Column(
+                    children: [
+                      InkWell(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          _move(
+                            _mapController.camera.center,
+                            _mapController.camera.zoom + 1,
+                          );
+                        },
+                        child: const SizedBox(
+                          width: 44,
+                          height: 44,
+                          child: Icon(
+                            Icons.add_rounded,
+                            size: 22,
+                            color: AppColors.darkTextColor,
                           ),
                         ),
-                      ],
-                    )
-                    .animate()
-                    .fadeIn(duration: 500.ms, delay: 200.ms)
-                    .slideX(
-                      begin: 0.2,
-                      end: 0,
-                      duration: 500.ms,
-                      delay: 200.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
+                      ),
+                      Container(
+                        width: 24,
+                        height: 1,
+                        color: Colors.grey.shade200,
+                      ),
+                      InkWell(
+                        borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(16),
+                        ),
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          _move(
+                            _mapController.camera.center,
+                            _mapController.camera.zoom - 1,
+                          );
+                        },
+                        child: const SizedBox(
+                          width: 44,
+                          height: 44,
+                          child: Icon(
+                            Icons.remove_rounded,
+                            size: 22,
+                            color: AppColors.darkTextColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            )
+                .animate()
+                .fadeIn(duration: 450.ms, delay: 150.ms)
+                .slideX(begin: 0.15, curve: Curves.easeOutCubic),
           ),
 
+          // Loading & Error Badges
           Obx(() {
             if (_c.isLoading.value) {
               return Positioned(
-                top: topInset + 136,
+                top: topInset + 120,
                 left: 0,
                 right: 0,
                 child: const Center(child: _StatusPill(loading: true)),
@@ -537,20 +477,20 @@ class _MapScreenState extends State<MapScreen> {
 
             if (_c.errorMessage.value != null) {
               return Positioned(
-                top: topInset + 136,
+                top: topInset + 120,
                 left: 16,
                 right: 76,
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
+                  padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: _softShadow,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: _floatingShadow,
                   ),
                   child: Row(
                     children: [
                       const Icon(
-                        Icons.error_outline_rounded,
+                        Icons.info_outline_rounded,
                         size: 18,
                         color: Colors.redAccent,
                       ),
@@ -583,14 +523,14 @@ class _MapScreenState extends State<MapScreen> {
               );
             }
 
-            if (_c.selectedLaporan.value != null) {
+            if (_c.selectedLaporan.value != null || isKeyboardOpen) {
               return const SizedBox.shrink();
             }
 
             final total = _c.filteredLaporan.length;
 
             return Positioned(
-              bottom: 22,
+              bottom: 24,
               left: 0,
               right: 0,
               child: Center(
@@ -600,34 +540,29 @@ class _MapScreenState extends State<MapScreen> {
                       : Icons.location_on_rounded,
                   label: total == 0
                       ? 'Tidak ada laporan yang cocok'
-                      : '$total titik laporan di peta',
+                      : '$total titik kerusakan jalan',
                 ),
               ).animate().fadeIn(duration: 300.ms),
             );
           }),
 
+          // Bottom Detail Preview Card (Hidden when keyboard is active)
           Obx(() {
             final lap = _c.selectedLaporan.value;
-            if (lap == null) return const SizedBox.shrink();
+            if (lap == null || isKeyboardOpen) return const SizedBox.shrink();
 
             return Positioned(
               left: 16,
               right: 16,
               bottom: 20,
-              child:
-                  _DetailCard(
-                        key: ValueKey(lap.id),
-                        laporan: lap,
-                        onClose: _c.closeDetailCard,
-                      )
-                      .animate()
-                      .fadeIn(duration: 300.ms)
-                      .slideY(
-                        begin: 0.15,
-                        end: 0,
-                        duration: 350.ms,
-                        curve: Curves.easeOutCubic,
-                      ),
+              child: _DetailCard(
+                key: ValueKey(lap.id),
+                laporan: lap,
+                onClose: _c.closeDetailCard,
+              )
+                  .animate()
+                  .fadeIn(duration: 250.ms)
+                  .slideY(begin: 0.12, curve: Curves.easeOutCubic),
             );
           }),
         ],
@@ -637,32 +572,26 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _buildSearchBar() {
     return Container(
-      height: 52,
-      padding: const EdgeInsets.only(left: 8, right: 6),
+      height: 48,
+      padding: const EdgeInsets.only(left: 10, right: 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.16),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: _floatingShadow,
       ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
-              color: AppColors.primaryColor.withOpacity(0.10),
+              color: AppColors.primaryColor.withOpacity(0.08),
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            child: const Icon(
               Icons.search_rounded,
               color: AppColors.primaryColor,
-              size: 20,
+              size: 18,
             ),
           ),
           const SizedBox(width: 10),
@@ -673,17 +602,17 @@ class _MapScreenState extends State<MapScreen> {
               textInputAction: TextInputAction.search,
               cursorColor: AppColors.primaryColor,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.darkTextColor,
               ),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 isCollapsed: true,
-                hintText: 'Cari desa atau jalan...',
+                hintText: 'Cari desa, kecamatan, atau jalan...',
                 hintStyle: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  color: Colors.grey.shade500,
+                  fontSize: 13,
+                  color: AppColors.lightGreyColor,
                 ),
               ),
             ),
@@ -691,18 +620,18 @@ class _MapScreenState extends State<MapScreen> {
           ValueListenableBuilder<TextEditingValue>(
             valueListenable: _searchC,
             builder: (_, value, __) {
-              if (value.text.isEmpty) return const SizedBox(width: 8);
+              if (value.text.isEmpty) return const SizedBox.shrink();
               return IconButton(
                 onPressed: () {
                   _searchC.clear();
                   _c.updateSearch('');
                 },
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 icon: Icon(
                   Icons.close_rounded,
-                  size: 19,
-                  color: Colors.grey.shade500,
+                  size: 18,
+                  color: Colors.grey.shade400,
                 ),
               );
             },
@@ -720,25 +649,36 @@ class _MapScreenState extends State<MapScreen> {
 
       return GestureDetector(
         onTap: _showFilterBottomSheet,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: 52,
-          width: 52,
+        child: Container(
+          height: 48,
+          width: 48,
           decoration: BoxDecoration(
-            color: active ? Colors.amber : Colors.white,
+            color: active ? AppColors.primaryColor : Colors.white,
             shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.16),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            boxShadow: _floatingShadow,
           ),
-          child: Icon(
-            Icons.tune_rounded,
-            color: active ? Colors.black87 : AppColors.primaryColor,
-            size: 23,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(
+                Icons.tune_rounded,
+                color: active ? Colors.white : AppColors.primaryColor,
+                size: 21,
+              ),
+              if (active)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: AppColors.skyBlue,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       );
@@ -760,7 +700,10 @@ class _MapScreenState extends State<MapScreen> {
                       ? 'Semua (${_c.semuaLaporan.length})'
                       : filter,
                   selected: _c.selectedFilter.value == filter,
-                  onTap: () => _c.selectFilter(filter),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    _c.selectFilter(filter);
+                  },
                 ),
               ),
           ],
@@ -770,11 +713,11 @@ class _MapScreenState extends State<MapScreen> {
   }
 }
 
-final List<BoxShadow> _softShadow = [
+final List<BoxShadow> _floatingShadow = [
   BoxShadow(
-    color: Colors.black.withOpacity(0.12),
+    color: Colors.black.withOpacity(0.08),
     blurRadius: 16,
-    offset: const Offset(0, 5),
+    offset: const Offset(0, 4),
   ),
 ];
 
@@ -794,30 +737,32 @@ class _TopChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.white.withOpacity(0.18),
+          color: selected ? AppColors.primaryColor : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? Colors.white : Colors.white.withOpacity(0.35),
+            color: selected
+                ? AppColors.primaryColor
+                : Colors.black.withOpacity(0.05),
           ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.14),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
+          boxShadow: [
+            BoxShadow(
+              color: selected
+                  ? AppColors.primaryColor.withOpacity(0.28)
+                  : Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Text(
           label,
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 11.5,
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-            color: selected ? AppColors.primaryColor : Colors.white,
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+            color: selected ? Colors.white : AppColors.darkTextColor,
           ),
         ),
       ),
@@ -841,33 +786,24 @@ class _SheetChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
           color: selected
               ? AppColors.primaryColor
               : AppColors.primaryColor.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: selected
                 ? AppColors.primaryColor
                 : AppColors.primaryColor.withOpacity(0.12),
           ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primaryColor.withOpacity(0.28),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (selected) ...[
-              const Icon(Icons.check_rounded, size: 15, color: Colors.white),
+              const Icon(Icons.check_rounded, size: 14, color: Colors.white),
               const SizedBox(width: 5),
             ],
             Text(
@@ -901,7 +837,7 @@ class _MapIconButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: _softShadow,
+          boxShadow: _floatingShadow,
         ),
         child: Center(child: child),
       ),
@@ -919,35 +855,35 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: _softShadow,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: _floatingShadow,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (loading) ...[
-            SizedBox(
-              width: 15,
-              height: 15,
+            const SizedBox(
+              width: 14,
+              height: 14,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 color: AppColors.primaryColor,
               ),
             ),
-            const SizedBox(width: 10),
-          ] else if (icon != null) ...[
-            Icon(icon, size: 16, color: AppColors.primaryColor),
             const SizedBox(width: 8),
+          ] else if (icon != null) ...[
+            Icon(icon, size: 15, color: AppColors.primaryColor),
+            const SizedBox(width: 6),
           ],
           Text(
-            label ?? 'Memuat laporan...',
+            label ?? 'Memuat sebaran laporan...',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: TextColors.primaryTextColor,
+              color: AppColors.darkTextColor,
             ),
           ),
         ],
@@ -964,30 +900,30 @@ class _ReportMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = selected ? 44.0 : 34.0;
+    final size = selected ? 42.0 : 34.0;
 
     return Stack(
       alignment: Alignment.center,
       children: [
         if (selected)
           Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: color.withOpacity(0.28),
-                ),
-              )
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withOpacity(0.28),
+            ),
+          )
               .animate(onPlay: (c) => c.repeat())
               .scale(
                 begin: const Offset(0.7, 0.7),
-                end: const Offset(1.1, 1.1),
-                duration: 1300.ms,
+                end: const Offset(1.15, 1.15),
+                duration: 1200.ms,
                 curve: Curves.easeOut,
               )
-              .fadeOut(duration: 1300.ms),
+              .fadeOut(duration: 1200.ms),
         AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutBack,
           width: size,
           height: size,
@@ -996,12 +932,12 @@ class _ReportMarker extends StatelessWidget {
             shape: BoxShape.circle,
             border: Border.all(
               color: Colors.white,
-              width: selected ? 3.5 : 2.5,
+              width: selected ? 3.0 : 2.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(0.5),
-                blurRadius: selected ? 16 : 8,
+                color: color.withOpacity(0.4),
+                blurRadius: selected ? 14 : 6,
                 offset: const Offset(0, 3),
               ),
             ],
@@ -1009,7 +945,7 @@ class _ReportMarker extends StatelessWidget {
           child: Icon(
             Icons.warning_amber_rounded,
             color: Colors.white,
-            size: selected ? 22 : 17,
+            size: selected ? 20 : 16,
           ),
         ),
       ],
@@ -1024,22 +960,25 @@ class _UserDot extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 52,
-        height: 52,
+        width: 48,
+        height: 48,
         decoration: BoxDecoration(
           color: AppColors.primaryColor.withOpacity(0.18),
           shape: BoxShape.circle,
         ),
         child: Center(
           child: Container(
-            width: 20,
-            height: 20,
+            width: 18,
+            height: 18,
             decoration: BoxDecoration(
               color: AppColors.primaryColor,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
+              border: Border.all(color: Colors.white, width: 2.5),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 6),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 5,
+                ),
               ],
             ),
           ),
@@ -1074,7 +1013,7 @@ class _DetailCard extends StatelessWidget {
   void _showFail() {
     showAwesomeSnackbar(
       title: 'Terjadi Kesalahan',
-      message: 'Gagal membuka Google Maps.',
+      message: 'Gagal membuka rute Google Maps.',
       contentType: ContentType.failure,
     );
   }
@@ -1086,235 +1025,222 @@ class _DetailCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.16),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: Stack(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Positioned.fill(
-              child: BatikPattern(
-                color: AppColors.primaryColor,
-                opacity: 0.06,
-                scale: 3,
-                fadeOut: true,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Thumb(url: laporan.image, color: color),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _Thumb(url: laporan.image, color: color),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 9,
-                                    vertical: 4,
-                                  ),
+                                  width: 5,
+                                  height: 5,
                                   decoration: BoxDecoration(
-                                    color: color.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 6,
-                                        height: 6,
-                                        decoration: BoxDecoration(
-                                          color: color,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        laporan.status.statusLabel,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w800,
-                                          color: color,
-                                        ),
-                                      ),
-                                    ],
+                                    color: color,
+                                    shape: BoxShape.circle,
                                   ),
                                 ),
-                                const Spacer(),
-                                GestureDetector(
-                                  onTap: onClose,
-                                  child: Container(
-                                    width: 28,
-                                    height: 28,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade100,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.close_rounded,
-                                      size: 16,
-                                      color: Colors.grey.shade600,
-                                    ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  laporan.status.statusLabel,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: color,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              laporan.tipeKerusakan.isNotEmpty
-                                  ? laporan.tipeKerusakan
-                                  : laporan.judul,
+                          ),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: onClose,
+                            child: Container(
+                              width: 26,
+                              height: 26,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 15,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 7),
+                      Text(
+                        laporan.tipeKerusakan.isNotEmpty
+                            ? laporan.tipeKerusakan
+                            : laporan.judul,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.darkTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_rounded,
+                            size: 13,
+                            color: AppColors.primaryColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              laporan.wilayahNama ?? laporan.judul,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 15.5,
-                                fontWeight: FontWeight.w800,
-                                color: TextColors.primaryTextColor,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.greyColor,
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on_rounded,
-                                  size: 13,
-                                  color: AppColors.primaryColor,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    laporan.wilayahNama ?? laporan.judul,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.greyColor,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 3),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time_rounded,
-                                  size: 13,
-                                  color: AppColors.greyColor,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    laporan.waktuLaporan,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 11,
-                                      color: AppColors.greyColor,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: SizedBox(
-                          height: 48,
-                          child: ElevatedButton(
-                            onPressed: () => Get.toNamed(
-                              AppRoutes.detailMaps,
-                              arguments: laporan,
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryColor,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Lihat rincian',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                const Icon(
-                                  Icons.arrow_forward_rounded,
-                                  size: 16,
-                                  color: Colors.white,
-                                ),
-                              ],
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        flex: 2,
-                        child: SizedBox(
-                          height: 48,
-                          child: OutlinedButton.icon(
-                            onPressed: _openNavigation,
-                            icon: Icon(
-                              Icons.navigation_rounded,
-                              size: 16,
-                              color: AppColors.primaryColor,
-                            ),
-                            label: Text(
-                              'Navigasi',
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time_rounded,
+                            size: 12,
+                            color: AppColors.lightGreyColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              laporan.waktuLaporan,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.primaryColor,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: AppColors.primaryColor.withOpacity(0.35),
-                              ),
-                              backgroundColor: AppColors.primaryColor
-                                  .withOpacity(0.05),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                fontSize: 11,
+                                color: AppColors.greyColor,
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: SizedBox(
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Get.to(
+                          () => DetailLaporanScreen(laporan: laporan),
+                          transition: Transition.rightToLeft,
+                          duration: const Duration(milliseconds: 300),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryColor,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Lihat Rincian',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 15,
+                            color: Colors.white,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: SizedBox(
+                    height: 44,
+                    child: OutlinedButton.icon(
+                      onPressed: _openNavigation,
+                      icon: const Icon(
+                        Icons.navigation_rounded,
+                        size: 15,
+                        color: AppColors.primaryColor,
+                      ),
+                      label: Text(
+                        'Navigasi',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryColor,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: AppColors.primaryColor.withOpacity(0.35),
+                        ),
+                        backgroundColor: AppColors.primaryColor.withOpacity(0.04),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -1330,18 +1256,18 @@ class _Thumb extends StatelessWidget {
   const _Thumb({required this.url, required this.color});
 
   Widget _placeholder() => Container(
-    color: color.withOpacity(0.12),
+    color: color.withOpacity(0.1),
     alignment: Alignment.center,
-    child: Icon(Icons.add_road_rounded, size: 30, color: color),
+    child: Icon(Icons.add_road_rounded, size: 28, color: color),
   );
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
       child: SizedBox(
-        width: 84,
-        height: 84,
+        width: 80,
+        height: 80,
         child: url.isEmpty
             ? _placeholder()
             : Image.network(
