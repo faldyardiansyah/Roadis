@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:roadis/modules/camera/screens/report_camera_screen.dart';
 import 'package:roadis/modules/history/screens/history_screen.dart';
 import 'package:roadis/modules/profile/screens/profile_screen.dart';
 import 'package:roadis/utils/app_colors.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../home/screens/home_screen.dart';
 import '../../maps/screens/maps_screen.dart';
@@ -35,7 +35,7 @@ class _MainScreenState extends State<MainScreen> {
 
   void _select(int index) {
     if (index == _currentIndex) return;
-    HapticFeedback.selectionClick();
+    HapticFeedback.lightImpact();
     setState(() {
       _currentIndex = index;
     });
@@ -49,74 +49,143 @@ class _MainScreenState extends State<MainScreen> {
       resizeToAvoidBottomInset: false,
       body: _screens[_currentIndex],
 
-      // Tombol tengah (kamera)
+      // Tombol tengah melayang (Hero Camera Button)
       floatingActionButton: isReportPage
           ? null
-          : SizedBox(
-              width: 60,
-              height: 60,
-              child: FloatingActionButton(
-                backgroundColor: AppColors.primaryColor,
-                elevation: 4,
-                highlightElevation: 2,
-                shape: const CircleBorder(),
-                splashColor: Colors.transparent,
-                focusColor: Colors.transparent,
-                hoverColor: Colors.transparent,
-                onPressed: () => _select(2),
-                child: const Icon(
-                  Icons.camera_alt_rounded,
-                  size: 26,
+          : Container(
+              width: 62,
+              height: 62,
+              margin: const EdgeInsets.only(top: 10),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [
+                    AppColors.skyBlue,
+                    AppColors.primaryColor,
+                    AppColors.deepNavy,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(
                   color: Colors.white,
+                  width: 3.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryColor.withOpacity(0.45),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => _select(2),
+                  splashColor: Colors.white.withOpacity(0.3),
+                  highlightColor: Colors.white.withOpacity(0.1),
+                  child: const Center(
+                    child: Icon(
+                      Icons.camera_alt_rounded,
+                      size: 27,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-      // Bottom navigation tidak tampil saat halaman kamera aktif.
+      // Bottom Navigation Bar Modern & Elegan
       bottomNavigationBar: isReportPage
           ? null
-          : BottomAppBar(
-              color: Colors.white,
-              surfaceTintColor: Colors.transparent,
-              elevation: 10,
-              shadowColor: Colors.black.withOpacity(0.25),
-              shape: const CircularNotchedRectangle(),
-              notchMargin: 8,
-              padding: EdgeInsets.zero,
-              height: 70,
-              child: Row(
-                children: [
-                  _NavItem(
-                    icon: Icons.home_outlined,
-                    activeIcon: Icons.home_rounded,
-                    label: 'Home',
-                    selected: _currentIndex == 0,
-                    onTap: () => _select(0),
+          : Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0F172A).withOpacity(0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, -6),
                   ),
-                  _NavItem(
-                    icon: Icons.map_outlined,
-                    activeIcon: Icons.map_rounded,
-                    label: 'Maps',
-                    selected: _currentIndex == 1,
-                    onTap: () => _select(1),
-                  ),
-                  const SizedBox(width: 72), // ruang untuk tombol kamera
-                  _NavItem(
-                    icon: Icons.history_rounded,
-                    activeIcon: Icons.history_rounded,
-                    label: 'History',
-                    selected: _currentIndex == 3,
-                    onTap: () => _select(3),
-                  ),
-                  _NavItem(
-                    icon: Icons.person_outline_rounded,
-                    activeIcon: Icons.person_rounded,
-                    label: 'Profil',
-                    selected: _currentIndex == 4,
-                    onTap: () => _select(4),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 6,
+                    offset: const Offset(0, -1),
                   ),
                 ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: SizedBox(
+                  height: 68,
+                  child: Row(
+                    children: [
+                      _NavItem(
+                        icon: Icons.home_outlined,
+                        activeIcon: Icons.home_rounded,
+                        label: 'Beranda',
+                        selected: _currentIndex == 0,
+                        onTap: () => _select(0),
+                      ),
+                      _NavItem(
+                        icon: Icons.map_outlined,
+                        activeIcon: Icons.map_rounded,
+                        label: 'Peta',
+                        selected: _currentIndex == 1,
+                        onTap: () => _select(1),
+                      ),
+
+                      // Area tengah tombol Lapor
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _select(2),
+                        child: SizedBox(
+                          width: 68,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Lapor',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10.5,
+                                  fontWeight: _currentIndex == 2
+                                      ? FontWeight.w800
+                                      : FontWeight.w700,
+                                  color: _currentIndex == 2
+                                      ? AppColors.primaryColor
+                                      : const Color(0xFF64748B),
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                              const SizedBox(height: 7),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      _NavItem(
+                        icon: Icons.receipt_long_outlined,
+                        activeIcon: Icons.receipt_long_rounded,
+                        label: 'Riwayat',
+                        selected: _currentIndex == 3,
+                        onTap: () => _select(3),
+                      ),
+                      _NavItem(
+                        icon: Icons.person_outline_rounded,
+                        activeIcon: Icons.person_rounded,
+                        label: 'Profil',
+                        selected: _currentIndex == 4,
+                        onTap: () => _select(4),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
     );
@@ -140,40 +209,46 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.primaryColor : Colors.grey.shade700;
-
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: Center(
-          // Container hanya terlihat saat menu aktif
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOutCubic,
-            width: 60,
-            height: 52,
-            decoration: BoxDecoration(
-              color: selected
-                  ? AppColors.primaryColor.withOpacity(0.10)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(selected ? activeIcon : icon, size: 22, color: color),
-                const SizedBox(height: 3),
-                Text(
-                  label,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: color,
-                  ),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.primaryColor.withOpacity(0.10)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              ],
-            ),
+                child: Icon(
+                  selected ? activeIcon : icon,
+                  size: 23,
+                  color: selected
+                      ? AppColors.primaryColor
+                      : const Color(0xFF94A3B8),
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10.5,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  color: selected
+                      ? AppColors.primaryColor
+                      : const Color(0xFF64748B),
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
           ),
         ),
       ),
