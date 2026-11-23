@@ -13,6 +13,14 @@ class AppColors {
   static const Color whitetr = Color(0xFFE2E8F0);
   static const Color backgroundColor = Color(0xFFF5F9FC);
 
+  // Brand & Splash Deep Tones
+  static const Color deepNavy = Color(0xFF003049);
+  static const Color midnightBlue = Color(0xFF023E8A);
+  static const Color shadowNavy = Color(0xFF001233);
+  static const Color skyBlue = Color(0xFF38BDF8);
+  static const Color oceanBlue = Color(0xFF0096C7);
+  static const Color lightIceBlue = Color(0xFFF0F9FF);
+
   // Text
   static const Color blackColor = Color(0xFF000000);
   static const Color darkTextColor = Color(0xFF1E293B);
@@ -29,7 +37,6 @@ class AppColors {
   // Border & divider
   static const Color borderColor = Color(0xFFE5E7EB);
   static const Color dividerColor = Color(0xFFE2E8F0);
-
 
   // Transparent / soft colors
   static final Color primaryColorLight =

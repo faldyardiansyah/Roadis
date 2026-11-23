@@ -13,142 +13,281 @@ class OnboardingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final OnboardingController controller = Get.put(OnboardingController());
     final size = MediaQuery.of(context).size;
-    final white = TextColors.whiteTextColor;
 
     return Scaffold(
-      backgroundColor: AppColors.primaryColor,
       body: Stack(
         children: [
+          // Background Gradient Mewah & Modern
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.deepNavy,         // Deep rich navy
+                  AppColors.primaryDarkColor, // Sapphire blue
+                  AppColors.primaryColor,     // Primary signature cyan-blue
+                  AppColors.midnightBlue,     // Midnight blue
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: [0.0, 0.35, 0.75, 1.0],
+              ),
+            ),
+          ),
+
+          // Glowing Ambient Orbs di Background
+          Positioned(
+            top: -size.width * 0.25,
+            right: -size.width * 0.25,
+            child: Container(
+              width: size.width * 0.85,
+              height: size.width * 0.85,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.primaryLightColor.withOpacity(0.35),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: size.height * 0.15,
+            left: -size.width * 0.3,
+            child: Container(
+              width: size.width * 0.9,
+              height: size.width * 0.9,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.oceanBlue.withOpacity(0.25),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Motif Khas Daerah (Batik Indramayu Pattern)
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: BatikPattern(height: size.height * 0.5, opacity: 0.16),
+            child: BatikPattern(
+              height: size.height * 0.52,
+              opacity: 0.11,
+              color: AppColors.whiteColor,
+            ),
           ),
 
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(28, 24, 28, 32),
+              padding: const EdgeInsets.fromLTRB(28, 20, 28, 30),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Spacer(),
-
-                  // Logo + nama
-                  Row(
-                    children: [
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Icon(
-                          Icons.alt_route_rounded,
-                          size: 40,
-                          color: AppColors.primaryColor,
+                  // Header badge pill
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.whiteColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.whiteColor.withOpacity(0.25),
+                          width: 1,
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: AppColors.skyBlue,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Kabupaten Indramayu',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.whiteColor.withOpacity(0.9),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.2),
+
+                  const Spacer(),
+
+                  // Logo Card Berdesain Glassmorphism Mewah
+                  Container(
+                    width: 78,
+                    height: 78,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.whiteColor, AppColors.lightIceBlue],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.shadowNavy.withOpacity(0.4),
+                          blurRadius: 28,
+                          offset: const Offset(0, 12),
+                        ),
+                        BoxShadow(
+                          color: AppColors.skyBlue.withOpacity(0.3),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.alt_route_rounded,
+                        size: 44,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                  )
+                      .animate()
+                      .fadeIn(duration: 600.ms)
+                      .scale(begin: const Offset(0.7, 0.7), curve: Curves.easeOutBack)
+                      .shimmer(delay: 700.ms, duration: 1200.ms),
+
+                  const SizedBox(height: 20),
+
+                  // Brand Title & Tagline
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
                       Text(
-                        'Roadis',
+                        'ROADIS',
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                          color: white,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5,
+                          color: AppColors.whiteColor,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: AppColors.skyBlue,
+                          shape: BoxShape.circle,
                         ),
                       ),
                     ],
                   )
                       .animate()
-                      .fadeIn(duration: 500.ms)
-                      .slideY(
-                        begin: 0.2,
-                        end: 0,
-                        duration: 500.ms,
-                        curve: Curves.easeOutCubic,
-                      ),
+                      .fadeIn(delay: 200.ms, duration: 500.ms)
+                      .slideX(begin: -0.1, curve: Curves.easeOutCubic),
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 14),
 
-                  // Headline besar, rata kiri
+                  // Headline Besar & Kuat
                   Text(
-                    'Inspeksi &\npelaporan jalan,\nlebih ringkas.',
+                    'Sistem Cerdas\nInspeksi & Lapor\nKerusakan Jalan',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 38,
-                      height: 1.12,
+                      fontSize: 34,
+                      height: 1.15,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -1.2,
-                      color: white,
+                      letterSpacing: -1.0,
+                      color: AppColors.whiteColor,
                     ),
                   )
                       .animate()
-                      .fadeIn(delay: 150.ms, duration: 600.ms)
-                      .slideY(
-                        begin: 0.12,
-                        end: 0,
-                        duration: 600.ms,
-                        curve: Curves.easeOutCubic,
-                      ),
+                      .fadeIn(delay: 350.ms, duration: 600.ms)
+                      .slideY(begin: 0.15, curve: Curves.easeOutCubic),
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 30),
 
-                  // Pesan status: garis tipis di kiri, tanpa kapsul
+                  // Dynamic Status Container (Glass Box)
                   Container(
-                    padding: const EdgeInsets.only(left: 14),
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      border: Border(
-                        left: BorderSide(
-                          color: white.withOpacity(0.4),
-                          width: 2,
-                        ),
+                      color: AppColors.whiteColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.whiteColor.withOpacity(0.2),
+                        width: 1,
                       ),
                     ),
-                    child: Obx(
-                      () => AnimatedSwitcher(
-                        duration: 350.ms,
-                        transitionBuilder: (child, anim) => FadeTransition(
-                          opacity: anim,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.3),
-                              end: Offset.zero,
-                            ).animate(anim),
-                            child: child,
+                    child: Row(
+                      children: [
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(AppColors.skyBlue),
                           ),
                         ),
-                        layoutBuilder: (current, previous) => Stack(
-                          alignment: Alignment.centerLeft,
-                          children: [...previous, if (current != null) current],
-                        ),
-                        child: SizedBox(
-                          key: ValueKey(controller.pesanSaatIni.value),
-                          width: double.infinity,
-                          child: Text(
-                            controller.pesanSaatIni.value,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              height: 1.4,
-                              fontWeight: FontWeight.w500,
-                              color: white.withOpacity(0.8),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Obx(
+                            () => AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              transitionBuilder: (child, anim) => FadeTransition(
+                                opacity: anim,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(0, 0.4),
+                                    end: Offset.zero,
+                                  ).animate(anim),
+                                  child: child,
+                                ),
+                              ),
+                              child: Text(
+                                controller.pesanSaatIni.value,
+                                key: ValueKey(controller.pesanSaatIni.value),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.whiteColor.withOpacity(0.92),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ),
                         ),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 500.ms, duration: 500.ms),
+
+                  const SizedBox(height: 24),
+
+                  // Elegant Smooth Linear Progress Indicator
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Container(
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.whiteColor.withOpacity(0.15),
+                      ),
+                      child: const LinearProgressIndicator(
+                        backgroundColor: Colors.transparent,
+                        valueColor: AlwaysStoppedAnimation(AppColors.skyBlue),
                       ),
                     ),
-                  ).animate().fadeIn(delay: 400.ms, duration: 600.ms),
-
-                  const SizedBox(height: 40),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
-                    child: LinearProgressIndicator(
-                      minHeight: 2,
-                      backgroundColor: white.withOpacity(0.15),
-                      valueColor: AlwaysStoppedAnimation(white),
-                    ),
-                  ).animate().fadeIn(delay: 600.ms, duration: 500.ms),
+                  ).animate().fadeIn(delay: 600.ms, duration: 400.ms),
                 ],
               ),
             ),

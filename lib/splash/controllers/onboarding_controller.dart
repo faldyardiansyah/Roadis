@@ -5,10 +5,10 @@ import 'package:roadis/auth/services/session_storage.dart';
 
 class OnboardingController extends GetxController {
   final List<String> pesanList = [
-    "Menyiapkan aplikasi ...",
-    "Mempersiapkan untuk Anda ...",
-    "Memuat data wilayah ...",
-    "Hampir selesai ...",
+    "Menghubungkan ke sistem ROADIS...",
+    "Memverifikasi modul deteksi AI...",
+    "Memuat data geospasial Indramayu...",
+    "Menyiapkan pengalaman terbaik untuk Anda...",
   ];
 
   var pesanSaatIni = ''.obs;
@@ -24,14 +24,14 @@ class OnboardingController extends GetxController {
   }
 
   void _mulaiGantiPesan() {
-    _timer = Timer.periodic(const Duration(milliseconds: 1500), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 900), (timer) {
       _index = (_index + 1) % pesanList.length;
       pesanSaatIni.value = pesanList[_index];
     });
   }
 
   void _pindahHalaman() {
-    Future.delayed(const Duration(seconds: 4), () {
+    Future.delayed(const Duration(milliseconds: 3200), () {
       _timer?.cancel();
 
       final token = SessionStorage.getToken();
