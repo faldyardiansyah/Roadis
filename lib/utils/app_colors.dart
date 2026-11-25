@@ -15,6 +15,7 @@ class AppColors {
 
   // Brand & Splash Deep Tones
   static const Color deepNavy = Color(0xFF003049);
+  static const Color darkNavy = Color(0xFF003566);
   static const Color midnightBlue = Color(0xFF023E8A);
   static const Color shadowNavy = Color(0xFF001233);
   static const Color skyBlue = Color(0xFF38BDF8);

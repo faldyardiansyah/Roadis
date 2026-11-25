@@ -312,6 +312,9 @@ class _MapScreenState extends State<MapScreen> {
               minZoom: 5.0,
               maxZoom: 18.0,
               onTap: (_, __) => _c.closeDetailCard(),
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
             ),
             children: [
               TileLayer(
