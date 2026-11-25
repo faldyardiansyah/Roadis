@@ -34,7 +34,8 @@ class HistoryController extends GetxController {
 
     if (query.isNotEmpty) {
       result = result.where((e) {
-        final nomorTiket = 'jk-${e.id}'.toLowerCase();
+        final nomorTiketRd = '#rd-${e.id}'.toLowerCase();
+        final nomorTiketJk = '#jk-${e.id}'.toLowerCase();
 
         final judul = e.judul.toLowerCase();
         final tipeKerusakan = e.tipeKerusakan.toLowerCase();
@@ -42,15 +43,14 @@ class HistoryController extends GetxController {
         final deskripsi = (e.deskripsi ?? '').toLowerCase();
         final status = e.status.statusLabel.toLowerCase();
         final catatanAdmin = (e.catatanAdmin ?? '').toLowerCase();
-        if (catatanAdmin.contains(query)) return true;
 
-        return nomorTiket.contains(query) ||
+        return nomorTiketRd.contains(query) ||
+            nomorTiketJk.contains(query) ||
             judul.contains(query) ||
             tipeKerusakan.contains(query) ||
             wilayah.contains(query) ||
             deskripsi.contains(query) ||
             status.contains(query) ||
-            catatanAdmin.contains(query) ||
             catatanAdmin.contains(query);
       }).toList();
     }
