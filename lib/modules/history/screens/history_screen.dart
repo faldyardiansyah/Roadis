@@ -82,8 +82,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
             ),
             Positioned(
-              top: topInset - 8,
-              right: -4,
+              right: -2,
               width: 175,
               height: 155,
               child: IgnorePointer(
