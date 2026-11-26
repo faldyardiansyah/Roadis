@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:roadis/modules/notification/services/notification_polling_service.dart';
 import 'package:roadis/modules/notification/services/notification_service.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/utils/widgets/batik_patern.dart';
@@ -42,6 +43,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _notifications = data;
         _notifications.sort((a, b) => _date(b).compareTo(_date(a)));
       });
+      NotificationPollingService.instance.unreadCount.value = _unreadCount;
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());
@@ -88,6 +90,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       await _service.tandaiDibaca(_id(item));
       if (!mounted) return;
       setState(() => item['is_read'] = true);
+      NotificationPollingService.instance.unreadCount.value = _unreadCount;
     } catch (e) {
       _showError(e);
     } finally {
@@ -107,6 +110,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           item['is_read'] = true;
         }
       });
+      NotificationPollingService.instance.unreadCount.value = 0;
     } catch (e) {
       _showError(e);
     } finally {
@@ -192,7 +196,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [AppColors.primaryColor, Color(0xFF0096C7)],
+          colors: [AppColors.primaryColor, AppColors.midnightBlue],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -212,18 +216,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
             Positioned.fill(
               child: BatikPattern(
                 color: Colors.white,
-                opacity: 0.10,
-                scale: 2.2,
+                opacity: 0.12,
+                scale: 2.4,
                 fadeOut: true,
               ),
             ),
             Positioned(
-              right: -4,
-              width: 175,
-              height: 155,
+              top: -8,
+              right: -15,
+              width: 250,
+              height: 230,
               child: IgnorePointer(
                 child: Opacity(
-                  opacity: 0.85,
+                  opacity: 0.28,
                   child: Image.asset(
                     'assets/images/burung_batik.png',
                     fit: BoxFit.contain,

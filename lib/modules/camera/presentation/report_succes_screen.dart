@@ -113,7 +113,7 @@ class _ReportSuccessScreenState extends State<ReportSuccessScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [AppColors.primaryColor, Color(0xFF0096C7)],
+          colors: [AppColors.primaryColor, AppColors.midnightBlue],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -133,18 +133,19 @@ class _ReportSuccessScreenState extends State<ReportSuccessScreen> {
             Positioned.fill(
               child: BatikPattern(
                 color: Colors.white,
-                opacity: 0.10,
-                scale: 2.2,
+                opacity: 0.12,
+                scale: 2.4,
                 fadeOut: true,
               ),
             ),
             Positioned(
-              right: -4,
-              width: 175,
-              height: 155,
+              top: -8,
+              right: -15,
+              width: 250,
+              height: 230,
               child: IgnorePointer(
                 child: Opacity(
-                  opacity: 0.85,
+                  opacity: 0.28,
                   child: Image.asset(
                     'assets/images/burung_batik.png',
                     fit: BoxFit.contain,

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:get/get.dart';
 import 'package:roadis/auth/services/session_storage.dart';
 import 'package:roadis/modules/notification/services/notification_service.dart';
 import 'package:roadis/modules/notification/services/local_notification_service.dart';
@@ -11,6 +12,7 @@ class NotificationPollingService with WidgetsBindingObserver {
   static final instance = NotificationPollingService._();
 
   final NotificationService _service = NotificationService();
+  final RxInt unreadCount = 0.obs;
 
   Timer? _timer;
   bool _requestBerjalan = false;
@@ -18,6 +20,11 @@ class NotificationPollingService with WidgetsBindingObserver {
   String? _activeToken;
 
   final Set<int> _knownIds = {};
+
+  bool _isUnread(Map<String, dynamic> item) {
+    final value = item['is_read'] ?? item['IsRead'] ?? false;
+    return !(value == true || value == 1 || value == 'true');
+  }
 
   void start() {
     if (_timer != null) return;
@@ -55,6 +62,8 @@ class NotificationPollingService with WidgetsBindingObserver {
       final data = await _service.getNotifikasi();
 
       if (SessionStorage.getToken() != token) return;
+
+      unreadCount.value = data.where(_isUnread).length;
 
       final currentIds = <int>{};
 
@@ -96,6 +105,7 @@ class NotificationPollingService with WidgetsBindingObserver {
     _activeToken = null;
     _knownIds.clear();
     _sudahAmbilDataAwal = false;
+    unreadCount.value = 0;
   }
 
   @override

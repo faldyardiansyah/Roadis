@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:roadis/auth/controllers/auth_controller.dart';
+import 'package:roadis/modules/notification/services/notification_polling_service.dart';
 import 'package:roadis/routes/app_routes.dart';
 import 'package:roadis/utils/app_colors.dart';
 
@@ -264,19 +265,24 @@ class _HomeHeaderState extends State<HomeHeader> {
                 size: 23,
                 color: Colors.white,
               ),
-              Positioned(
-                right: 12,
-                top: 11,
-                child: Container(
-                  width: 9,
-                  height: 9,
-                  decoration: BoxDecoration(
-                    color: AppColors.redColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
+              Obx(() {
+                if (NotificationPollingService.instance.unreadCount.value <= 0) {
+                  return const SizedBox.shrink();
+                }
+                return Positioned(
+                  right: 12,
+                  top: 11,
+                  child: Container(
+                    width: 9,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: AppColors.redColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
                   ),
-                ),
-              ),
+                );
+              }),
             ],
           ),
         ),

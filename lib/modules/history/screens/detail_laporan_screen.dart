@@ -5,13 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:roadis/core/laporan/models/laporan_model.dart';
+import 'package:roadis/modules/history/controllers/detail_laporan_controller.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/utils/widgets/batik_patern.dart';
-import 'package:roadis/utils/widgets/show_snackbar.dart';
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
-import 'package:roadis/modules/chat/screens/chat_screen.dart';
 
 class DetailLaporanScreen extends StatefulWidget {
   final LaporanModel laporan;
@@ -25,49 +22,20 @@ class DetailLaporanScreen extends StatefulWidget {
 class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
   LaporanModel get laporan => widget.laporan;
 
-  final MapController _miniMapController = MapController();
-  final ScrollController _scrollController = ScrollController();
-  bool _isScrolled = false;
+  late final String _tag;
+  late final DetailLaporanController _c;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _tag = 'detail_${widget.laporan.id}_${identityHashCode(this)}';
+    _c = Get.put(DetailLaporanController(widget.laporan), tag: _tag);
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    Get.delete<DetailLaporanController>(tag: _tag);
     super.dispose();
-  }
-
-  void _onScroll() {
-    final scrolled = _scrollController.hasClients && _scrollController.offset > 24;
-    if (scrolled != _isScrolled) {
-      setState(() => _isScrolled = scrolled);
-    }
-  }
-
-  bool get _hasValidCoords =>
-      laporan.latitude.isFinite &&
-      laporan.longitude.isFinite &&
-      laporan.latitude != 0 &&
-      laporan.longitude != 0;
-
-  // Status index: 0 = Terkirim, 1 = Ditinjau/Diproses, 2 = Selesai
-  int get _statusStepIndex {
-    final s = laporan.status.toLowerCase().trim();
-    if (s.contains('selesai') || s.contains('done') || s.contains('resolved')) {
-      return 2;
-    }
-    if (s.contains('proses') ||
-        s.contains('tinjau') ||
-        s.contains('progress') ||
-        s.contains('verifikasi')) {
-      return 1;
-    }
-    return 0; // Menunggu
   }
 
   void _showImageDialog(BuildContext context, String imageUrl, String tagTitle) {
@@ -152,78 +120,6 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
     );
   }
 
-  Future<void> _openGoogleMaps() async {
-    HapticFeedback.lightImpact();
-    if (!_hasValidCoords) {
-      showAwesomeSnackbar(
-        title: 'Lokasi Tidak Valid',
-        message: 'Koordinat lokasi kerusakan tidak tersedia.',
-        contentType: ContentType.warning,
-      );
-      return;
-    }
-
-    final lat = laporan.latitude;
-    final lng = laporan.longitude;
-    final uri = Uri.parse(
-      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
-    );
-
-    try {
-      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!opened) {
-        showAwesomeSnackbar(
-          title: 'Gagal Membuka Peta',
-          message: 'Google Maps tidak dapat dibuka pada perangkat ini.',
-          contentType: ContentType.failure,
-        );
-      }
-    } catch (_) {
-      showAwesomeSnackbar(
-        title: 'Terjadi Kesalahan',
-        message: 'Gagal mengarahkan rute navigasi.',
-        contentType: ContentType.failure,
-      );
-    }
-  }
-
-  void _copyCoordinates(BuildContext context) {
-    if (!_hasValidCoords) return;
-    Clipboard.setData(
-      ClipboardData(text: '${laporan.latitude}, ${laporan.longitude}'),
-    );
-    HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.darkTextColor,
-        duration: const Duration(seconds: 2),
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_rounded, color: AppColors.skyBlue, size: 18),
-            const SizedBox(width: 10),
-            Text(
-              'Koordinat GPS berhasil disalin',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _recenterMap() {
-    if (!_hasValidCoords) return;
-    HapticFeedback.selectionClick();
-    _miniMapController.move(LatLng(laporan.latitude, laporan.longitude), 16.5);
-  }
-
   @override
   Widget build(BuildContext context) {
     final topInset = MediaQuery.of(context).padding.top;
@@ -234,7 +130,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            controller: _scrollController,
+            controller: _c.scrollController,
             physics: const ClampingScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,7 +183,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
 
                       const SizedBox(height: 18),
 
-                      if (_hasValidCoords)
+                      if (_c.hasValidCoords)
                         _buildMiniPetaCard(context)
                             .animate()
                             .fadeIn(duration: 400.ms, delay: 440.ms)
@@ -315,85 +211,88 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
       top: 0,
       left: 0,
       right: 0,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.only(
-          top: topInset + 6,
-          left: 16,
-          right: 16,
-          bottom: 10,
-        ),
-        decoration: BoxDecoration(
-          color: _isScrolled ? AppColors.primaryColor : Colors.transparent,
-          boxShadow: _isScrolled
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.12),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
+      child: Obx(() {
+        final scrolled = _c.isScrolled.value;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: EdgeInsets.only(
+            top: topInset + 6,
+            left: 16,
+            right: 16,
+            bottom: 10,
+          ),
+          decoration: BoxDecoration(
+            color: scrolled ? AppColors.primaryColor : Colors.transparent,
+            boxShadow: scrolled
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.12),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: () => Get.back(),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.20),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.30),
+                    ),
                   ),
-                ]
-              : null,
-        ),
-        child: Row(
-          children: [
-            GestureDetector(
-              onTap: () => Get.back(),
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.20),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.30),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white,
+                    size: 16,
                   ),
-                ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: Colors.white,
-                  size: 16,
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: _isScrolled ? 1.0 : 0.0,
+              const SizedBox(width: 12),
+              Expanded(
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: scrolled ? 1.0 : 0.0,
+                  child: Text(
+                    'Detail Laporan',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.22),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.35),
+                  ),
+                ),
                 child: Text(
-                  'Detail Laporan',
+                  '#RD-${laporan.id}',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 16,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.22),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.35),
-                ),
-              ),
-              child: Text(
-                '#RD-${laporan.id}',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      }),
     );
   }
 
@@ -404,7 +303,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
         gradient: const LinearGradient(
           colors: [
             AppColors.primaryColor,
-            Color(0xFF0096C7),
+            AppColors.midnightBlue,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -427,19 +326,19 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
             Positioned.fill(
               child: BatikPattern(
                 color: Colors.white,
-                opacity: 0.10,
-                scale: 2.2,
+                opacity: 0.12,
+                scale: 2.4,
                 fadeOut: true,
               ),
             ),
             Positioned(
-              top: topInset - 6,
-              right: -4,
-              width: 175,
-              height: 155,
+              top: -8,
+              right: -15,
+              width: 250,
+              height: 230,
               child: IgnorePointer(
                 child: Opacity(
-                  opacity: 0.85,
+                  opacity: 0.28,
                   child: Image.asset(
                     'assets/images/burung_batik.png',
                     fit: BoxFit.contain,
@@ -701,7 +600,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
   }
 
   Widget _buildStatusTimeline(Color statusColor) {
-    final current = _statusStepIndex;
+    final current = _c.statusStepIndex;
     final steps = [
       {'title': 'Terkirim', 'sub': 'Laporan masuk'},
       {'title': 'Ditinjau', 'sub': 'Verifikasi teknis'},
@@ -1287,7 +1186,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
                 ),
                 const Spacer(),
                 GestureDetector(
-                  onTap: () => _copyCoordinates(context),
+                  onTap: () => _c.copyCoordinates(context),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
@@ -1329,7 +1228,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
               children: [
                 // Live interactive draggable map!
                 FlutterMap(
-                  mapController: _miniMapController,
+                  mapController: _c.miniMapController,
                   options: MapOptions(
                     initialCenter: point,
                     initialZoom: 16.5,
@@ -1413,7 +1312,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
                   bottom: 10,
                   right: 10,
                   child: GestureDetector(
-                    onTap: _recenterMap,
+                    onTap: _c.recenterMap,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
@@ -1480,7 +1379,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
               child: SizedBox(
                 height: 48,
                 child: OutlinedButton.icon(
-                  onPressed: _openGoogleMaps,
+                  onPressed: _c.openGoogleMaps,
                   icon: const Icon(
                     Icons.navigation_rounded,
                     size: 16,
@@ -1512,19 +1411,7 @@ class _DetailLaporanScreenState extends State<DetailLaporanScreen> {
               child: SizedBox(
                 height: 48,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    Get.to(
-                      () => ChatScreen(
-                        laporanId: laporan.id,
-                        jenisJalan: laporan.jenisJalan,
-                        kewenanganJalan: laporan.kewenanganJalan,
-                        wilayahNama: laporan.wilayahNama,
-                      ),
-                      transition: Transition.rightToLeft,
-                      duration: const Duration(milliseconds: 300),
-                    );
-                  },
+                  onPressed: _c.openChatScreen,
                   icon: const Icon(
                     Icons.chat_bubble_rounded,
                     size: 17,

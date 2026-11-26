@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:roadis/core/laporan/models/laporan_model.dart';
+import 'package:roadis/modules/notification/services/notification_polling_service.dart';
 import 'package:roadis/routes/app_routes.dart';
 import 'package:roadis/utils/app_colors.dart';
 import 'package:roadis/utils/widgets/batik_patern.dart';
@@ -56,7 +57,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [AppColors.primaryColor, Color(0xFF0096C7)],
+          colors: [AppColors.primaryColor, AppColors.midnightBlue],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -76,18 +77,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
             Positioned.fill(
               child: BatikPattern(
                 color: Colors.white,
-                opacity: 0.10,
-                scale: 2.2,
+                opacity: 0.12,
+                scale: 2.4,
                 fadeOut: true,
               ),
             ),
             Positioned(
-              right: -2,
-              width: 175,
-              height: 155,
+              top: -8,
+              right: -15,
+              width: 250,
+              height: 230,
               child: IgnorePointer(
                 child: Opacity(
-                  opacity: 0.85,
+                  opacity: 0.28,
                   child: Image.asset(
                     'assets/images/burung_batik.png',
                     fit: BoxFit.contain,
@@ -143,10 +145,40 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 color: Colors.white.withOpacity(0.28),
                               ),
                             ),
-                            child: const Icon(
-                              Icons.notifications_none_rounded,
-                              size: 22,
-                              color: Colors.white,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.notifications_none_rounded,
+                                  size: 22,
+                                  color: Colors.white,
+                                ),
+                                Obx(() {
+                                  if (NotificationPollingService
+                                          .instance
+                                          .unreadCount
+                                          .value <=
+                                      0) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Positioned(
+                                    right: 10,
+                                    top: 10,
+                                    child: Container(
+                                      width: 8.5,
+                                      height: 8.5,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.redColor,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ],
                             ),
                           ),
                         ),
